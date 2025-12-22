@@ -31,11 +31,11 @@
 **Goal**: Enable running common tasks from the repository root.
 **Priority**: P1
 
-- [ ] T011 [US2] Add `dev` script to root `package.json` to start all apps
-- [ ] T012 [US2] Add `build` script to root `package.json` for topological builds
-- [ ] T013 [US2] Add `lint` script to root `package.json`
-- [ ] T014 [US2] Add `type-check` script to root `package.json`
-- [ ] T015 [US2] Add `clean` script to root `package.json` to remove artifacts
+- [x] T011 [US2] Add `dev` script to root `package.json` to start all apps
+- [x] T012 [US2] Add `build` script to root `package.json` for topological builds
+- [x] T013 [US2] Add `lint` script to root `package.json`
+- [x] T014 [US2] Add `type-check` script to root `package.json`
+- [x] T015 [US2] Add `clean` script to root `package.json` to remove artifacts
 
 ## Phase 5: Shared Configuration Management (US3)
 **Goal**: Enforce consistent code style and configuration across workspaces.
