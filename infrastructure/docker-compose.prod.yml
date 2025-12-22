@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  etcd:
+    restart: always
+
+  minio:
+    restart: always
+
+  milvus:
+    restart: always
+
+  neo4j:
+    restart: always
+
+  postgres:
+    restart: always
