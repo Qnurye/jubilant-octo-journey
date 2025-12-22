@@ -1,0 +1,18 @@
+etcd:
+  endpoints:
+    - localhost:2379
+  rootPath: by-dev # The root path for Milvus data in etcd
+
+minio:
+  address: localhost
+  port: 9000
+  accessKeyID: minioadmin
+  secretAccessKey: minioadmin
+  bucketName: milvus-bucket
+  rootPath: files
+
+storage:
+  path: /var/lib/milvus/data
+  type: minio # local or minio
+
+# minimal configuration for standalone

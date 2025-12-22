@@ -1,0 +1,15 @@
+services:
+  etcd:
+    restart: always
+
+  minio:
+    restart: always
+
+  milvus:
+    restart: always
+
+  neo4j:
+    restart: always
+
+  postgres:
+    restart: always

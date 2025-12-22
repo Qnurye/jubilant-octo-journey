@@ -43,3 +43,12 @@ Thumbs.db
 
 # Temporary
 tmp/
+
+# Database Data (Docker Volumes)
+infrastructure/milvus/volumes/
+infrastructure/neo4j/data/
+infrastructure/neo4j/logs/
+infrastructure/postgres/data/
+*.tfstate*
+*.tfvars
+.terraform/

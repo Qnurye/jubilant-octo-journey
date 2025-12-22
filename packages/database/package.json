@@ -1,0 +1,23 @@
+{
+  "name": "@jubilant/database",
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@zilliz/milvus2-sdk-node": "^2.3.3",
+    "drizzle-orm": "^0.29.3",
+    "neo4j-driver": "^5.16.0",
+    "postgres": "^3.4.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.20.13",
+    "vitest": "^1.2.1",
+    "@types/node": "^20.11.5"
+  }
+}
