@@ -1,34 +1,20 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import { getMilvusClient, closeMilvusClient } from '../../src/clients/milvus';
 import { initMilvusCollection, COLLECTION_NAME, VECTOR_DIM } from '../../src/schema/milvus';
-import { DataType } from '@zilliz/milvus2-sdk-node';
 
-// Skip if MILVUS_HOST is not reachable (we can't easily detect this inside the test without timeout)
-// But integration tests usually assume env is up.
+// Integration tests require running Docker containers
+// Use longer timeout for Milvus operations which can be slow on startup
 describe('Milvus Integration', () => {
-  
+
   it('should connect to Milvus and initialize collection', async () => {
-    try {
-      const client = await getMilvusClient();
-      expect(client).toBeDefined();
+    const client = await getMilvusClient();
+    expect(client).toBeDefined();
 
-      await initMilvusCollection(client);
+    await initMilvusCollection(client);
 
-      const hasCollection = await client.hasCollection({ collection_name: COLLECTION_NAME });
-      expect(hasCollection.value).toBe(true);
-    } catch (error) {
-      console.warn("Skipping Milvus test because connection failed. Ensure Docker is running.");
-      console.error(error);
-      // In a real CI environment, we might want this to fail. 
-      // For local dev where docker might be off, we warn.
-      // But for the purpose of this task, I will let it fail if it can't connect,
-      // as that validates the implementation.
-      // However, to avoid blocking the agent loop if user hasn't started docker:
-      // I will rethrow if it is a logic error, but maybe suppress connection error?
-      // No, let's be strict.
-      throw error;
-    }
-  });
+    const hasCollection = await client.hasCollection({ collection_name: COLLECTION_NAME });
+    expect(hasCollection.value).toBe(true);
+  }, 30000);
 
   it('should insert and search vectors', async () => {
     const client = await getMilvusClient();
@@ -67,11 +53,7 @@ describe('Milvus Integration', () => {
 
     expect(searchRes.status.error_code).toBe('Success');
     expect(searchRes.results.length).toBeGreaterThan(0);
-    // Note: ID match isn't guaranteed to be exact top 1 if we inserted many randoms, 
-    // but with 1 item it should be.
-    // However, we didn't flush. Milvus insert is async in persistence but search sees memory segments.
-    // Let's verify we got something.
-  });
+  }, 30000);
 
   afterAll(async () => {
     // Cleanup: Drop collection to keep state clean? Or just leave it?

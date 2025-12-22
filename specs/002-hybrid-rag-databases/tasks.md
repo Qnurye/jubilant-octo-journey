@@ -65,17 +65,17 @@ Goal: Enable structured data persistence via PostgreSQL and Drizzle ORM.
 Goal: Provide a single entry point for managing all database connections and health.
 **Priority**: P2
 
-- [ ] T021 [US4] Implement `DatabaseManager` class orchestrating all clients in `packages/database/src/index.ts`
-- [ ] T022 [US4] Implement unified `healthCheck` logic in `packages/database/src/health/index.ts`
-- [ ] T023 [US4] Create unit test for configuration validation in `packages/database/tests/unit/config.test.ts`
-- [ ] T024 [US4] Create unit test for health check aggregation in `packages/database/tests/unit/health.test.ts`
+- [x] T021 [US4] Implement `DatabaseManager` class orchestrating all clients in `packages/database/src/index.ts`
+- [x] T022 [US4] Implement unified `healthCheck` logic in `packages/database/src/health/index.ts`
+- [x] T023 [US4] Create unit test for configuration validation in `packages/database/tests/unit/config.test.ts`
+- [x] T024 [US4] Create unit test for health check aggregation in `packages/database/tests/unit/health.test.ts`
 
 ## Phase 7: Polish
 
 Goal: Finalize documentation and verify full system stability.
 
-- [ ] T025 Create usage documentation and README in `packages/database/README.md`
-- [ ] T026 Run full package test suite to ensure all integrations pass in `packages/database/`
+- [x] T025 Create usage documentation and README in `packages/database/README.md`
+- [x] T026 Run full package test suite to ensure all integrations pass in `packages/database/`
 
 ## Dependencies
 
