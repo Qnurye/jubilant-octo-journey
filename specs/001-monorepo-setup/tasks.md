@@ -41,10 +41,10 @@
 **Goal**: Enforce consistent code style and configuration across workspaces.
 **Priority**: P2
 
-- [ ] T016 [US3] Implement shared Prettier configuration in `packages/config/prettier.config.js`
-- [ ] T017 [US3] Implement shared ESLint configuration in `packages/config/eslint.config.js`
-- [ ] T018 [P] [US3] Update `apps/web` to extend shared TS, ESLint, and Prettier configs
-- [ ] T019 [P] [US3] Update `apps/api` to extend shared TS, ESLint, and Prettier configs
+- [x] T016 [US3] Implement shared Prettier configuration in `packages/config/prettier.config.js`
+- [x] T017 [US3] Implement shared ESLint configuration in `packages/config/eslint.config.js`
+- [x] T018 [P] [US3] Update `apps/web` to extend shared TS, ESLint, and Prettier configs
+- [x] T019 [P] [US3] Update `apps/api` to extend shared TS, ESLint, and Prettier configs
 
 ## Phase 6: Shared Type Definitions (US4)
 **Goal**: Enable type sharing between frontend and backend.
