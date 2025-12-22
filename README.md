@@ -49,7 +49,7 @@ bun dev
 ```
 
 - **Web**: http://localhost:3000
-- **API**: http://localhost:3000 (Hono might run on different port, check console)
+- **API**: http://localhost:8080
 
 > Note: By default, `bun dev` runs scripts in parallel.
 

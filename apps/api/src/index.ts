@@ -1,20 +1,25 @@
-import { Hono } from "hono";
-import { User } from "@repo/types";
+import { Hono } from 'hono';
+import { User } from '@repo/types';
 
 const app = new Hono();
 
-app.get("/", (c) => {
+app.get('/', (c) => {
   const user: User = {
-    id: "1",
-    name: "API User",
-    email: "api@example.com",
-    role: "admin",
+    id: '1',
+    name: 'API User',
+    email: 'api@example.com',
+    role: 'admin',
     createdAt: new Date(),
   };
   return c.json({
-    message: "Hello Hono!",
+    message: 'Hello Hono!',
     user,
   });
 });
 
-export default app;
+const port = 8080;
+
+export default {
+  port,
+  fetch: app.fetch,
+};
