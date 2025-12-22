@@ -1,0 +1,14 @@
+{
+  "name": "@repo/api",
+  "scripts": {
+    "dev": "bun run --hot src/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.11.1"
+  },
+  "devDependencies": {
+    "@repo/config": "workspace:*",
+    "@repo/types": "workspace:*",
+    "@types/bun": "latest"
+  }
+}
