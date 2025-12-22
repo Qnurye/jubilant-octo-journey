@@ -50,9 +50,9 @@
 **Goal**: Enable type sharing between frontend and backend.
 **Priority**: P2
 
-- [ ] T020 [US4] Define example shared domain entity in `packages/types/src/index.ts`
-- [ ] T021 [P] [US4] Import and use shared type in `apps/web/src/app/page.tsx` (or similar entry)
-- [ ] T022 [P] [US4] Import and use shared type in `apps/api/src/index.ts`
+- [x] T020 [US4] Define example shared domain entity in `packages/types/src/index.ts`
+- [x] T021 [P] [US4] Import and use shared type in `apps/web/src/app/page.tsx` (or similar entry)
+- [x] T022 [P] [US4] Import and use shared type in `apps/api/src/index.ts`
 
 ## Phase 7: Polish
 **Goal**: Finalize documentation and verify environment.
