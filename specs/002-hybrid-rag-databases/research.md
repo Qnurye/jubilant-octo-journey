@@ -25,7 +25,7 @@ Use **Milvus 2.x Standalone** mode via Docker Compose.
   - Type Safety: Define schemas in TypeScript that mirror Milvus collections.
 - **Indexing**:
   - Use `HNSW` index type for an optimal balance between search speed and recall accuracy.
-  - Metric type: `COSINE` or `L2` depending on embedding model normalization (OpenAI typically uses Cosine/Inner Product).
+  - Metric type: `COSINE` or `L2` depending on embedding model normalization (Qwen3-Embedding-8B uses 4096 dimensions).
 
 ### Alternatives Considered
 - **Pinecone/Weaviate**: Ruled out by Constitution (mandates Milvus).

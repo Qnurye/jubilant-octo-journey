@@ -34,7 +34,7 @@ NEO4J_USER="neo4j"
 NEO4J_PASSWORD="password"
 
 # Postgres
-POSTGRES_URL="postgres://postgres:postgres@localhost:5432/jubilant_db"
+POSTGRES_URL="postgres://postgres:password@localhost:5432/jubilant_db"
 ```
 
 ## 3. Using the Client Library

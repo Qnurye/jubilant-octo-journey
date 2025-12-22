@@ -22,7 +22,6 @@ export class DatabaseManager {
   private _milvus: MilvusClient | null = null;
   private _neo4j: Driver | null = null;
   private _postgres: PostgresDb | null = null;
-  private _postgresRaw: ReturnType<typeof postgres> | null = null;
   private _connected = false;
 
   get milvus(): MilvusClient {
@@ -94,7 +93,6 @@ export class DatabaseManager {
     this._milvus = null;
     this._neo4j = null;
     this._postgres = null;
-    this._postgresRaw = null;
     this._connected = false;
 
     console.log('DatabaseManager: All databases disconnected.');

@@ -4,11 +4,34 @@ import { withRetry } from '../retry/index';
 
 let clientInstance: MilvusClient | null = null;
 
+/**
+ * Verifies the Milvus client connection is healthy.
+ * Returns true if healthy, false otherwise.
+ */
+const verifyConnection = async (client: MilvusClient): Promise<boolean> => {
+  try {
+    const health = await client.checkHealth();
+    return health.isHealthy;
+  } catch {
+    return false;
+  }
+};
+
 export const getMilvusClient = async (): Promise<MilvusClient> => {
+  // If we have an existing client, verify it's still connected
   if (clientInstance) {
-    // Basic check if client is connected? Milvus SDK doesn't always expose isConnected clearly in all versions,
-    // but usually we trust the instance if it exists.
-    return clientInstance;
+    const isHealthy = await verifyConnection(clientInstance);
+    if (isHealthy) {
+      return clientInstance;
+    }
+    // Connection is stale, close and reconnect
+    console.log('Milvus connection stale, reconnecting...');
+    try {
+      await clientInstance.closeConnection();
+    } catch {
+      // Ignore close errors for stale connection
+    }
+    clientInstance = null;
   }
 
   const address = `${config.MILVUS_HOST}:${config.MILVUS_PORT}`;
@@ -24,15 +47,12 @@ export const getMilvusClient = async (): Promise<MilvusClient> => {
       password,
     });
 
-    // Verify connection by checking health or server info
-    // checkHealth() is available in newer SDKs
-    try {
-        await client.checkHealth();
-    } catch (e) {
-         // Fallback or re-throw
-         throw new Error(`Failed to connect to Milvus at ${address}: ${e instanceof Error ? e.message : String(e)}`);
+    // Verify connection by checking health
+    const isHealthy = await verifyConnection(client);
+    if (!isHealthy) {
+      throw new Error(`Failed to connect to Milvus at ${address}: health check failed`);
     }
-    
+
     console.log('Successfully connected to Milvus');
     return client;
   });

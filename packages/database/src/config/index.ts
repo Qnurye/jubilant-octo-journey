@@ -25,9 +25,22 @@ const envSchema = z.object({
 
 export type DatabaseConfig = z.infer<typeof envSchema>;
 
-// Parse process.env
-// In a real app we might want to throw or log nicely.
-// Zod's parse will throw if invalid.
-const config = envSchema.parse(process.env);
+// Parse and validate process.env with nicer error handling.
+const parsedEnv = envSchema.safeParse(process.env);
+
+if (!parsedEnv.success) {
+  const issues = parsedEnv.error.issues
+    .map((issue) => {
+      const path = issue.path.join('.') || 'ROOT';
+      return `  - ${path}: ${issue.message}`;
+    })
+    .join('\n');
+
+  const message = `Invalid environment configuration:\n${issues}`;
+  console.error(message);
+  throw new Error(message);
+}
+
+const config: DatabaseConfig = parsedEnv.data;
 
 export default config;

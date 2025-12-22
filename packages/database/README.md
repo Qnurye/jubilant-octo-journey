@@ -44,7 +44,7 @@ NEO4J_PASSWORD="password"           # required
 POSTGRES_HOST="localhost"      # default: localhost
 POSTGRES_PORT="5432"           # default: 5432
 POSTGRES_USER="postgres"       # default: postgres
-POSTGRES_PASSWORD="postgres"   # required
+POSTGRES_PASSWORD="password"   # required
 POSTGRES_DB="jubilant_db"      # default: jubilant_db
 
 # Environment
@@ -69,7 +69,7 @@ async function main() {
   // Use Milvus for vector search
   const searchResult = await db.milvus.search({
     collection_name: 'knowledge_chunks',
-    vector: [0.1, 0.2, ...], // 1536-dim embedding
+    vector: [0.1, 0.2, ...], // 4096-dim embedding (Qwen3-Embedding-8B)
     limit: 5,
   });
 
@@ -178,7 +178,7 @@ The `knowledge_chunks` collection schema:
 | Field | Type | Description |
 |-------|------|-------------|
 | `chunk_id` | Int64 (PK) | Unique chunk identifier |
-| `vector` | FloatVector[1536] | Embedding vector |
+| `vector` | FloatVector[4096] | Embedding vector |
 | `content_text` | VarChar | Text content |
 | `metadata` | JSON | Source URL, page, author |
 | `topic_tag` | VarChar | Topic for filtering |

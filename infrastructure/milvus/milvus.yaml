@@ -1,10 +1,10 @@
 etcd:
   endpoints:
-    - localhost:2379
+    - etcd:2379
   rootPath: by-dev # The root path for Milvus data in etcd
 
 minio:
-  address: localhost
+  address: minio
   port: 9000
   accessKeyID: minioadmin
   secretAccessKey: minioadmin
