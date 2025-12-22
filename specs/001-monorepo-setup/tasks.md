@@ -57,8 +57,8 @@
 ## Phase 7: Polish
 **Goal**: Finalize documentation and verify environment.
 
-- [ ] T023 Update README.md with setup and usage instructions in `README.md`
-- [ ] T024 Verify all root scripts execute successfully in `package.json`
+- [x] T023 Update README.md with setup and usage instructions in `README.md`
+- [x] T024 Verify all root scripts execute successfully in `package.json`
 
 ## Dependencies
 
