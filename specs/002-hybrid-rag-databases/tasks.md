@@ -34,31 +34,31 @@ Goal: Establish shared utilities for configuration validation and connection res
 Goal: Enable semantic search capabilities via Milvus integration.
 **Priority**: P1
 
-- [ ] T008 [US1] Create Milvus configuration file in `infrastructure/milvus/milvus.yaml`
-- [ ] T009 [US1] Implement Milvus client wrapper in `packages/database/src/clients/milvus.ts`
-- [ ] T010 [US1] Implement `initMilvusCollection` with `knowledge_chunks` schema in `packages/database/src/schema/milvus.ts`
-- [ ] T011 [US1] Create integration test for Milvus connection and vector insertion in `packages/database/tests/integration/milvus.test.ts`
+- [x] T008 [US1] Create Milvus configuration file in `infrastructure/milvus/milvus.yaml`
+- [x] T009 [US1] Implement Milvus client wrapper in `packages/database/src/clients/milvus.ts`
+- [x] T010 [US1] Implement `initMilvusCollection` with `knowledge_chunks` schema in `packages/database/src/schema/milvus.ts`
+- [x] T011 [US1] Create integration test for Milvus connection and vector insertion in `packages/database/tests/integration/milvus.test.ts`
 
 ## Phase 4: User Story 2 - Knowledge Graph Traversal (Neo4j)
 
 Goal: Enable relationship-based retrieval via Neo4j integration.
 **Priority**: P1
 
-- [ ] T012 [US2] Create Neo4j configuration file in `infrastructure/neo4j/neo4j.conf`
-- [ ] T013 [US2] Implement Neo4j client wrapper in `packages/database/src/clients/neo4j.ts`
-- [ ] T014 [US2] Implement `initGraphConstraints` for Concept/Document uniqueness in `packages/database/src/schema/neo4j.ts`
-- [ ] T015 [US2] Create integration test for Neo4j connection and query in `packages/database/tests/integration/neo4j.test.ts`
+- [x] T012 [US2] Create Neo4j configuration file in `infrastructure/neo4j/neo4j.conf`
+- [x] T013 [US2] Implement Neo4j client wrapper in `packages/database/src/clients/neo4j.ts`
+- [x] T014 [US2] Implement `initGraphConstraints` for Concept/Document uniqueness in `packages/database/src/schema/neo4j.ts`
+- [x] T015 [US2] Create integration test for Neo4j connection and query in `packages/database/tests/integration/neo4j.test.ts`
 
 ## Phase 5: User Story 3 - Application Data Persistence (Postgres)
 
 Goal: Enable structured data persistence via PostgreSQL and Drizzle ORM.
 **Priority**: P1
 
-- [ ] T016 [US3] Create initial SQL initialization script in `infrastructure/postgres/init.sql`
-- [ ] T017 [US3] Define Drizzle schema (sessions, queries, feedback) in `packages/database/src/schema/postgres.ts`
-- [ ] T018 [US3] Implement Postgres client with Drizzle in `packages/database/src/clients/postgres.ts`
-- [ ] T019 [US3] Configure Drizzle Kit in `packages/database/drizzle.config.ts`
-- [ ] T020 [US3] Create integration test for Postgres connection and CRUD in `packages/database/tests/integration/postgres.test.ts`
+- [x] T016 [US3] Create initial SQL initialization script in `infrastructure/postgres/init.sql`
+- [x] T017 [US3] Define Drizzle schema (sessions, queries, feedback) in `packages/database/src/schema/postgres.ts`
+- [x] T018 [US3] Implement Postgres client with Drizzle in `packages/database/src/clients/postgres.ts`
+- [x] T019 [US3] Configure Drizzle Kit in `packages/database/drizzle.config.ts`
+- [x] T020 [US3] Create integration test for Postgres connection and CRUD in `packages/database/tests/integration/postgres.test.ts`
 
 ## Phase 6: User Story 4 - Unified Database Connectivity
 
