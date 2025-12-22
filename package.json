@@ -1,0 +1,21 @@
+{
+  "name": "jubilant-octo-journey",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "build": "bun run --filter '*' build",
+    "lint": "bun run --filter '*' lint",
+    "type-check": "bun run --filter '*' type-check",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules .next dist build out coverage",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "typescript": "^5.0.0"
+  }
+}
