@@ -51,6 +51,9 @@ describe('Milvus Integration', () => {
 
     expect(insertRes.status.error_code).toBe('Success');
 
+    // Small delay for near real-time visibility
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
     // Search (might need a small delay for consistency, though loadCollectionSync handles most)
     // Milvus is near real-time.
     
