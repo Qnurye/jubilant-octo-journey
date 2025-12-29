@@ -1,0 +1,614 @@
+openapi: 3.1.0
+info:
+  title: CompetitionTutor RAG Pipeline API
+  description: |
+    Hybrid Retrieval-Augmented Generation API for academic competition tutoring.
+    Combines Milvus vector search and Neo4j knowledge graph traversal for
+    grounded, citation-backed responses.
+  version: 1.0.0
+  contact:
+    name: CompetitionTutor Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Query
+    description: Q&A endpoints for student questions
+  - name: Ingestion
+    description: Document upload and processing
+  - name: Health
+    description: System health and status
+  - name: Feedback
+    description: Response quality feedback
+
+paths:
+  /api/query:
+    post:
+      operationId: submitQuery
+      summary: Submit a question for RAG processing
+      description: |
+        Processes a student question through the hybrid RAG pipeline:
+        1. Embeds query using Qwen3-Embedding-8B
+        2. Parallel retrieval from Milvus (vector) and Neo4j (graph)
+        3. RRF fusion of results
+        4. Reranking with Qwen3-Reranker-4B
+        5. Response generation with Qwen3-32B
+
+        Returns complete response with citations. For streaming, use /api/query/stream.
+      tags:
+        - Query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+      responses:
+        '200':
+          description: Successful query response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '400':
+          description: Invalid query request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Service unavailable (LLM or database down)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/query/stream:
+    post:
+      operationId: streamQuery
+      summary: Submit a question with streaming response
+      description: |
+        Same as /api/query but returns Server-Sent Events for real-time
+        token streaming. First token appears within 3 seconds.
+
+        Event types:
+        - `token`: Generated text chunk
+        - `citation`: Citation reference when mentioned in text
+        - `metadata`: Final response metadata
+        - `done`: Stream complete
+        - `error`: Processing error
+      tags:
+        - Query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreamQueryRequest'
+      responses:
+        '200':
+          description: Streaming response
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Server-Sent Events stream. Each event contains JSON:
+                  ```
+                  event: token
+                  data: {"type": "token", "content": "Dynamic programming..."}
+
+                  event: citation
+                  data: {"type": "citation", "citation": {...}}
+
+                  event: metadata
+                  data: {"type": "metadata", "metadata": {...}}
+
+                  event: done
+                  data: {"type": "done"}
+                  ```
+        '400':
+          description: Invalid query request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ingest:
+    post:
+      operationId: ingestDocument
+      summary: Upload a document for ingestion
+      description: |
+        Ingests a document into the knowledge base. Processing is async:
+        1. Document is registered and queued
+        2. Content-aware chunking preserves code/formulas/tables
+        3. Chunks are embedded and stored in Milvus
+        4. Knowledge triples are extracted and stored in Neo4j
+
+        Poll /api/ingest/{jobId}/status for progress.
+      tags:
+        - Ingestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestRequest'
+      responses:
+        '202':
+          description: Document accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResponse'
+        '400':
+          description: Invalid document or format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Document already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/ingest/{jobId}/status:
+    get:
+      operationId: getIngestionStatus
+      summary: Get ingestion job status
+      description: Returns current status and progress of a document ingestion job.
+      tags:
+        - Ingestion
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Ingestion job ID returned from POST /api/ingest
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestStatusResponse'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/feedback:
+    post:
+      operationId: submitFeedback
+      summary: Submit feedback for a query response
+      description: |
+        Records user feedback on response quality. Used for continuous
+        improvement of the RAG pipeline. Feedback is anonymized.
+      tags:
+        - Feedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FeedbackRequest'
+      responses:
+        '201':
+          description: Feedback recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+                    example: "Feedback recorded successfully"
+        '400':
+          description: Invalid feedback
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Query not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/health:
+    get:
+      operationId: healthCheck
+      summary: System health check
+      description: |
+        Returns health status of all system components:
+        - Milvus vector database
+        - Neo4j graph database
+        - PostgreSQL database
+        - LLM service (Qwen3-32B)
+        - Embedding service (Qwen3-Embedding-8B)
+        - Reranker service (Qwen3-Reranker-4B)
+      tags:
+        - Health
+      responses:
+        '200':
+          description: All systems healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: One or more systems unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/health/ready:
+    get:
+      operationId: readinessCheck
+      summary: Kubernetes readiness probe
+      description: Returns 200 if service is ready to accept traffic.
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service ready
+        '503':
+          description: Service not ready
+
+  /api/health/live:
+    get:
+      operationId: livenessCheck
+      summary: Kubernetes liveness probe
+      description: Returns 200 if service is alive.
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service alive
+
+components:
+  schemas:
+    QueryRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: The student's question
+          example: "How does dynamic programming differ from divide and conquer?"
+        sessionId:
+          type: string
+          format: uuid
+          description: Session ID for conversation continuity
+        topK:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Maximum number of retrieved chunks to use
+        includeGraph:
+          type: boolean
+          default: true
+          description: Whether to include Neo4j graph traversal
+        topicFilter:
+          type: string
+          description: Filter results by topic tag
+          example: "algorithms"
+
+    StreamQueryRequest:
+      allOf:
+        - $ref: '#/components/schemas/QueryRequest'
+        - type: object
+          properties:
+            stream:
+              type: boolean
+              const: true
+
+    QueryResponse:
+      type: object
+      required:
+        - queryId
+        - answer
+        - citations
+        - confidence
+        - metadata
+      properties:
+        queryId:
+          type: string
+          format: uuid
+          description: Unique query identifier for feedback
+        answer:
+          type: string
+          description: Generated response grounded in retrieved evidence
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+          description: Sources referenced in the answer
+        confidence:
+          type: string
+          enum: [high, medium, low, insufficient]
+          description: |
+            Confidence level based on reranker scores:
+            - high: top score >= 0.8
+            - medium: top score >= 0.6
+            - low: top score >= 0.4
+            - insufficient: top score < 0.4 (answer acknowledges uncertainty)
+        metadata:
+          $ref: '#/components/schemas/ResponseMetadata'
+
+    Citation:
+      type: object
+      required:
+        - id
+        - chunkId
+        - documentTitle
+        - documentUrl
+        - snippet
+        - relevanceScore
+      properties:
+        id:
+          type: string
+          description: Citation reference ID (e.g., "[1]")
+        chunkId:
+          type: string
+          description: Internal chunk identifier
+        documentTitle:
+          type: string
+          description: Source document title
+        documentUrl:
+          type: string
+          description: Source document URL or path
+        snippet:
+          type: string
+          maxLength: 500
+          description: Relevant excerpt from the source
+        relevanceScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Reranker relevance score
+
+    ResponseMetadata:
+      type: object
+      required:
+        - queryId
+        - totalTokens
+        - citationCount
+        - confidence
+        - vectorResultCount
+        - graphResultCount
+        - latencyMs
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        totalTokens:
+          type: integer
+          description: Total tokens in context window
+        citationCount:
+          type: integer
+          description: Number of citations in response
+        confidence:
+          type: string
+          enum: [high, medium, low, insufficient]
+        vectorResultCount:
+          type: integer
+          description: Results from Milvus vector search
+        graphResultCount:
+          type: integer
+          description: Results from Neo4j graph traversal
+        latencyMs:
+          type: integer
+          description: End-to-end processing time in milliseconds
+
+    StreamChunk:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [token, citation, metadata, done, error]
+        content:
+          type: string
+          description: Text content (for 'token' type)
+        citation:
+          $ref: '#/components/schemas/Citation'
+        metadata:
+          $ref: '#/components/schemas/ResponseMetadata'
+        error:
+          type: string
+          description: Error message (for 'error' type)
+
+    IngestRequest:
+      type: object
+      required:
+        - documentUrl
+      properties:
+        documentUrl:
+          type: string
+          description: URL or file path to the document
+          example: "/data/documents/dp-tutorial.md"
+        title:
+          type: string
+          description: Override auto-detected document title
+        format:
+          type: string
+          enum: [markdown, pdf, text]
+          description: Document format (auto-detected if not specified)
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional metadata to attach to the document
+
+    IngestResponse:
+      type: object
+      required:
+        - jobId
+        - documentId
+        - status
+      properties:
+        jobId:
+          type: string
+          format: uuid
+          description: Ingestion job ID for status polling
+        documentId:
+          type: string
+          format: uuid
+          description: Document ID in the knowledge base
+        status:
+          type: string
+          enum: [queued]
+        estimatedChunks:
+          type: integer
+          description: Estimated number of chunks (if available)
+
+    IngestStatusResponse:
+      type: object
+      required:
+        - jobId
+        - documentId
+        - status
+        - progress
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, chunking, embedding, extracting, complete, failed]
+          description: |
+            Processing stages:
+            - queued: Waiting to start
+            - chunking: Content-aware document splitting
+            - embedding: Generating vectors with Qwen3-Embedding-8B
+            - extracting: LLM-based knowledge triple extraction
+            - complete: Successfully processed
+            - failed: Error during processing
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Completion percentage
+        totalChunks:
+          type: integer
+          description: Total chunks to process
+        processedChunks:
+          type: integer
+          description: Chunks processed so far
+        errorMessage:
+          type: string
+          description: Error details if status is 'failed'
+
+    FeedbackRequest:
+      type: object
+      required:
+        - queryId
+        - rating
+      properties:
+        queryId:
+          type: string
+          format: uuid
+          description: Query ID from the response to rate
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Rating (1 = poor, 5 = excellent)
+        comment:
+          type: string
+          maxLength: 1000
+          description: Optional feedback comment
+
+    HealthResponse:
+      type: object
+      required:
+        - healthy
+        - components
+        - timestamp
+      properties:
+        healthy:
+          type: boolean
+          description: Overall system health
+        components:
+          type: object
+          properties:
+            milvus:
+              $ref: '#/components/schemas/ComponentHealth'
+            neo4j:
+              $ref: '#/components/schemas/ComponentHealth'
+            postgres:
+              $ref: '#/components/schemas/ComponentHealth'
+            llm:
+              $ref: '#/components/schemas/ComponentHealth'
+            embedding:
+              $ref: '#/components/schemas/ComponentHealth'
+            reranker:
+              $ref: '#/components/schemas/ComponentHealth'
+        timestamp:
+          type: string
+          format: date-time
+
+    ComponentHealth:
+      type: object
+      required:
+        - healthy
+      properties:
+        healthy:
+          type: boolean
+        latencyMs:
+          type: integer
+          description: Health check latency
+        message:
+          type: string
+          description: Additional status information
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional error context
+
+  securitySchemes:
+    sessionToken:
+      type: apiKey
+      in: header
+      name: X-Session-Token
+      description: |
+        Optional session token for conversation continuity.
+        Not required for anonymous queries.

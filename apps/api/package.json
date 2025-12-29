@@ -8,6 +8,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@jubilant/database": "workspace:*",
+    "@jubilant/rag": "workspace:*",
     "hono": "^4.11.1"
   },
   "devDependencies": {
