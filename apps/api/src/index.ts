@@ -8,8 +8,12 @@
 
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { db } from '@jubilant/database';
 import { metricsMiddleware } from './middleware/metrics';
 import healthRoutes from './routes/health';
+import queryRoutes from './routes/query';
+import ingestRoutes from './routes/ingest';
+import feedbackRoutes from './routes/feedback';
 
 const app = new Hono();
 
@@ -19,6 +23,23 @@ app.use('*', metricsMiddleware);
 
 // Mount routes
 app.route('/api/health', healthRoutes);
+app.route('/api/query', queryRoutes);
+app.route('/api/ingest', ingestRoutes);
+app.route('/api/feedback', feedbackRoutes);
+
+// Initialize database connection
+async function initializeDatabase() {
+  try {
+    await db.connect();
+    console.log('Database connections established');
+  } catch (error) {
+    console.error('Failed to connect to databases:', error);
+    process.exit(1);
+  }
+}
+
+// Initialize on startup
+initializeDatabase().catch(console.error);
 
 // Root endpoint
 app.get('/', (c) => {

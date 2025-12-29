@@ -20,6 +20,9 @@ export * as postgresSchema from './schema/postgres';
 export { withRetry, type RetryOptions } from './retry/index';
 export type { HealthStatus } from './health/index';
 
+// Re-export commonly used drizzle-orm operators for query building
+export { eq, and, or, not, isNull, isNotNull, gt, gte, lt, lte, ne, like, ilike, inArray, sql } from 'drizzle-orm';
+
 type PostgresDb = PostgresJsDatabase<typeof postgresSchema>;
 
 export class DatabaseManager {

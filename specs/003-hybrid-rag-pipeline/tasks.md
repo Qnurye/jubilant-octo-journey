@@ -83,40 +83,40 @@ Based on plan.md structure (monorepo with Bun workspaces):
 
 ### Retrieval Layer
 
-- [ ] T023 [US1] Implement MilvusRetriever class extending BaseRetriever in packages/rag/src/retrieval/vector.ts
-- [ ] T024 [US1] Implement Neo4jGraphRetriever class for prerequisite/relationship traversal in packages/rag/src/retrieval/graph.ts
-- [ ] T025 [US1] Implement reciprocalRankFusion function in packages/rag/src/retrieval/hybrid.ts
-- [ ] T026 [US1] Implement HybridRetriever class combining vector + graph with RRF in packages/rag/src/retrieval/hybrid.ts
+- [x] T023 [US1] Implement MilvusRetriever class extending BaseRetriever in packages/rag/src/retrieval/vector.ts
+- [x] T024 [US1] Implement Neo4jGraphRetriever class for prerequisite/relationship traversal in packages/rag/src/retrieval/graph.ts
+- [x] T025 [US1] Implement reciprocalRankFusion function in packages/rag/src/retrieval/hybrid.ts
+- [x] T026 [US1] Implement HybridRetriever class combining vector + graph with RRF in packages/rag/src/retrieval/hybrid.ts
 
 ### Reranking Layer
 
-- [ ] T027 [US1] Integrate Qwen3Reranker into query pipeline in packages/rag/src/reranking/reranker.ts (depends on T016)
-- [ ] T028 [US1] Add confidence threshold logic (0.6) and confidence level calculation (high/medium/low/insufficient)
+- [x] T027 [US1] Integrate Qwen3Reranker into query pipeline in packages/rag/src/reranking/reranker.ts (depends on T016)
+- [x] T028 [US1] Add confidence threshold logic (0.6) and confidence level calculation (high/medium/low/insufficient)
 
 ### Generation Layer
 
-- [ ] T029 [US1] Create grounded response prompt templates in packages/rag/src/generation/prompts.ts
-- [ ] T030 [US1] Implement citation extraction and formatting in packages/rag/src/generation/citations.ts
-- [ ] T031 [US1] Implement streaming utilities (SSE format) in packages/rag/src/generation/streaming.ts
+- [x] T029 [US1] Create grounded response prompt templates in packages/rag/src/generation/prompts.ts
+- [x] T030 [US1] Implement citation extraction and formatting in packages/rag/src/generation/citations.ts
+- [x] T031 [US1] Implement streaming utilities (SSE format) in packages/rag/src/generation/streaming.ts
 
 ### Query Pipeline Integration
 
-- [ ] T032 [US1] Create RAGPipeline class orchestrating retrieval → rerank → generate in packages/rag/src/index.ts
-- [ ] T033 [US1] Export public API from packages/rag/src/index.ts (RAGPipeline, types)
+- [x] T032 [US1] Create RAGPipeline class orchestrating retrieval → rerank → generate in packages/rag/src/pipeline.ts
+- [x] T033 [US1] Export public API from packages/rag/src/index.ts (RAGPipeline, types)
 
 ### API Endpoints
 
-- [ ] T034 [US1] Implement POST /api/query endpoint in apps/api/src/routes/query.ts
-- [ ] T035 [US1] Implement POST /api/query/stream endpoint with SSE in apps/api/src/routes/query.ts
-- [ ] T036 [US1] Add query validation (non-empty, max length 2000, valid topK 1-20)
-- [ ] T037 [US1] Log query metrics to retrievalMetrics table via packages/database
+- [x] T034 [US1] Implement POST /api/query endpoint in apps/api/src/routes/query.ts
+- [x] T035 [US1] Implement POST /api/query/stream endpoint with SSE in apps/api/src/routes/query.ts
+- [x] T036 [US1] Add query validation (non-empty, max length 2000, valid topK 1-20)
+- [x] T037 [US1] Log query metrics to retrievalMetrics table via packages/database
 
 ### Frontend Components
 
-- [ ] T038 [P] [US1] Create QueryInput component in apps/web/src/app/components/QueryInput.tsx
-- [ ] T039 [P] [US1] Create ResponseStream component for SSE consumption in apps/web/src/app/components/ResponseStream.tsx
-- [ ] T040 [P] [US1] Create CitationList component in apps/web/src/app/components/CitationList.tsx
-- [ ] T041 [US1] Update apps/web/src/app/page.tsx to integrate Q&A interface components
+- [x] T038 [P] [US1] Create QueryInput component in apps/web/src/app/components/QueryInput.tsx
+- [x] T039 [P] [US1] Create ResponseStream component for SSE consumption in apps/web/src/app/components/ResponseStream.tsx
+- [x] T040 [P] [US1] Create CitationList component in apps/web/src/app/components/CitationList.tsx
+- [x] T041 [US1] Update apps/web/src/app/page.tsx to integrate Q&A interface components
 
 **Checkpoint**: User Story 1 complete - students can ask questions and receive grounded answers with citations
 
@@ -130,20 +130,20 @@ Based on plan.md structure (monorepo with Bun workspaces):
 
 ### Uncertainty Handling
 
-- [ ] T042 [US2] Add hasInsufficientEvidence flag to QueryContext in packages/rag/src/types.ts
-- [ ] T043 [US2] Create uncertainty acknowledgment prompt template in packages/rag/src/generation/prompts.ts
-- [ ] T044 [US2] Implement confidence-based response branching in RAGPipeline (packages/rag/src/index.ts)
-- [ ] T045 [US2] Add partial evidence handling (indicate which parts are well-supported vs limited evidence)
+- [x] T042 [US2] Add hasInsufficientEvidence flag to QueryContext in packages/rag/src/types.ts
+- [x] T043 [US2] Create uncertainty acknowledgment prompt template in packages/rag/src/generation/prompts.ts
+- [x] T044 [US2] Implement confidence-based response branching in RAGPipeline (packages/rag/src/pipeline.ts)
+- [x] T045 [US2] Add partial evidence handling (indicate which parts are well-supported vs limited evidence)
 
 ### API Response Updates
 
-- [ ] T046 [US2] Update QueryResponse to include confidence level in apps/api/src/routes/query.ts
-- [ ] T047 [US2] Add appropriate messaging when confidence is 'insufficient' in streaming response
+- [x] T046 [US2] Update QueryResponse to include confidence level in apps/api/src/routes/query.ts
+- [x] T047 [US2] Add appropriate messaging when confidence is 'insufficient' in streaming response
 
 ### Frontend Updates
 
-- [ ] T048 [US2] Add confidence indicator styling to ResponseStream component
-- [ ] T049 [US2] Display uncertainty acknowledgment message in UI when confidence is low/insufficient
+- [x] T048 [US2] Add confidence indicator styling to ResponseStream component
+- [x] T049 [US2] Display uncertainty acknowledgment message in UI when confidence is low/insufficient
 
 **Checkpoint**: User Story 2 complete - system properly acknowledges when it doesn't have sufficient evidence
 
@@ -157,43 +157,43 @@ Based on plan.md structure (monorepo with Bun workspaces):
 
 ### Content-Aware Chunking
 
-- [ ] T050 [US3] Implement protected element extraction (code blocks, LaTeX, tables) in packages/rag/src/ingestion/chunker.ts
-- [ ] T051 [US3] Implement header-based section splitting in packages/rag/src/ingestion/chunker.ts
-- [ ] T052 [US3] Implement semantic chunking within sections (512-1024 token target) in packages/rag/src/ingestion/chunker.ts
-- [ ] T053 [US3] Create ContentAwareChunker class combining all chunking strategies in packages/rag/src/ingestion/chunker.ts
-- [ ] T054 [US3] Add token counting utility (supporting English and Chinese) in packages/rag/src/ingestion/chunker.ts
+- [x] T050 [US3] Implement protected element extraction (code blocks, LaTeX, tables) in packages/rag/src/ingestion/chunker.ts
+- [x] T051 [US3] Implement header-based section splitting in packages/rag/src/ingestion/chunker.ts
+- [x] T052 [US3] Implement semantic chunking within sections (512-1024 token target) in packages/rag/src/ingestion/chunker.ts
+- [x] T053 [US3] Create ContentAwareChunker class combining all chunking strategies in packages/rag/src/ingestion/chunker.ts
+- [x] T054 [US3] Add token counting utility (supporting English and Chinese) in packages/rag/src/ingestion/chunker.ts
 
 ### Embedding and Storage
 
-- [ ] T055 [US3] Implement batch embedding with Qwen3Embedding in packages/rag/src/ingestion/embedder.ts
-- [ ] T056 [US3] Implement Milvus chunk insertion in packages/rag/src/ingestion/storage.ts
-- [ ] T057 [US3] Implement Neo4j Chunk node creation and relationships in packages/rag/src/ingestion/storage.ts
+- [x] T055 [US3] Implement batch embedding with Qwen3Embedding in packages/rag/src/ingestion/embedder.ts
+- [x] T056 [US3] Implement Milvus chunk insertion in packages/rag/src/ingestion/storage.ts
+- [x] T057 [US3] Implement Neo4j Chunk node creation and relationships in packages/rag/src/ingestion/storage.ts
 
 ### Knowledge Graph Triple Extraction
 
-- [ ] T058 [US3] Implement LLM-based triple extraction prompts in packages/rag/src/ingestion/extractor.ts
-- [ ] T059 [US3] Create triple validation (valid predicates, confidence >= 0.5) in packages/rag/src/ingestion/extractor.ts
-- [ ] T060 [US3] Implement Neo4j triple storage (Concepts, relationships) in packages/rag/src/ingestion/extractor.ts
+- [x] T058 [US3] Implement LLM-based triple extraction prompts in packages/rag/src/ingestion/extractor.ts
+- [x] T059 [US3] Create triple validation (valid predicates, confidence >= 0.5) in packages/rag/src/ingestion/extractor.ts
+- [x] T060 [US3] Implement Neo4j triple storage (Concepts, relationships) in packages/rag/src/ingestion/extractor.ts
 
 ### Ingestion Pipeline
 
-- [ ] T061 [US3] Create IngestionPipeline class orchestrating chunk → embed → store → extract in packages/rag/src/ingestion/pipeline.ts
-- [ ] T062 [US3] Implement async job tracking with ingestionJobs table in packages/rag/src/ingestion/pipeline.ts
-- [ ] T063 [US3] Add document status state machine (pending → chunking → embedding → extracting → active/failed)
+- [x] T061 [US3] Create IngestionPipeline class orchestrating chunk → embed → store → extract in packages/rag/src/ingestion/pipeline.ts
+- [x] T062 [US3] Implement async job tracking with ingestionJobs table in packages/rag/src/ingestion/pipeline.ts
+- [x] T063 [US3] Add document status state machine (pending → chunking → embedding → extracting → active/failed)
 
 ### API Endpoints
 
-- [ ] T064 [US3] Implement POST /api/ingest endpoint in apps/api/src/routes/ingest.ts
-- [ ] T065 [US3] Implement GET /api/ingest/{jobId}/status endpoint in apps/api/src/routes/ingest.ts
-- [ ] T066 [US3] Add document validation (URL format, supported formats: markdown, pdf, text)
-- [ ] T067 [US3] Add conflict detection for duplicate documents (409 response)
+- [x] T064 [US3] Implement POST /api/ingest endpoint in apps/api/src/routes/ingest.ts
+- [x] T065 [US3] Implement GET /api/ingest/{jobId}/status endpoint in apps/api/src/routes/ingest.ts
+- [x] T066 [US3] Add document validation (URL format, supported formats: markdown, pdf, text)
+- [x] T067 [US3] Add conflict detection for duplicate documents (409 response)
 
 ### Document Format Support
 
-- [ ] T068 [P] [US3] Implement Markdown document parser in packages/rag/src/ingestion/parsers/markdown.ts
-- [ ] T069 [P] [US3] Implement PDF document parser in packages/rag/src/ingestion/parsers/pdf.ts
-- [ ] T070 [P] [US3] Implement plain text document parser in packages/rag/src/ingestion/parsers/text.ts
-- [ ] T071 [US3] Create unified document parser factory in packages/rag/src/ingestion/parsers/index.ts
+- [x] T068 [P] [US3] Implement Markdown document parser in packages/rag/src/ingestion/parsers/markdown.ts
+- [x] T069 [P] [US3] Implement PDF document parser in packages/rag/src/ingestion/parsers/pdf.ts
+- [x] T070 [P] [US3] Implement plain text document parser in packages/rag/src/ingestion/parsers/text.ts
+- [x] T071 [US3] Create unified document parser factory in packages/rag/src/ingestion/parsers/index.ts
 
 **Checkpoint**: User Story 3 complete - documents can be ingested with code/formula/table preservation
 
@@ -207,21 +207,21 @@ Based on plan.md structure (monorepo with Bun workspaces):
 
 ### Metrics Collection
 
-- [ ] T072 [US4] Implement detailed retrieval metrics collection in packages/rag/src/retrieval/metrics.ts
-- [ ] T073 [US4] Add timing instrumentation for vector search, graph traversal, fusion, reranking
-- [ ] T074 [US4] Track overlap count (results found by both retrievers)
-- [ ] T075 [US4] Calculate and log aggregated statistics (vectorTopScore, vectorAvgScore, etc.)
+- [x] T072 [US4] Implement detailed retrieval metrics collection in packages/rag/src/retrieval/metrics.ts
+- [x] T073 [US4] Add timing instrumentation for vector search, graph traversal, fusion, reranking
+- [x] T074 [US4] Track overlap count (results found by both retrievers)
+- [x] T075 [US4] Calculate and log aggregated statistics (vectorTopScore, vectorAvgScore, etc.)
 
 ### Feedback Collection
 
-- [ ] T076 [US4] Implement POST /api/feedback endpoint in apps/api/src/routes/feedback.ts
-- [ ] T077 [US4] Add feedback validation (valid queryId, rating 1-5)
-- [ ] T078 [US4] Store feedback in feedbackEvents table linked to ragQueries
+- [x] T076 [US4] Implement POST /api/feedback endpoint in apps/api/src/routes/feedback.ts
+- [x] T077 [US4] Add feedback validation (valid queryId, rating 1-5)
+- [x] T078 [US4] Store feedback in feedbackEvents table linked to ragQueries
 
 ### Frontend Feedback UI
 
-- [ ] T079 [P] [US4] Create FeedbackWidget component in apps/web/src/app/components/FeedbackWidget.tsx
-- [ ] T080 [US4] Integrate FeedbackWidget into Q&A page after response is displayed
+- [x] T079 [P] [US4] Create FeedbackWidget component in apps/web/src/app/components/FeedbackWidget.tsx
+- [x] T080 [US4] Integrate FeedbackWidget into Q&A page after response is displayed
 
 **Checkpoint**: User Story 4 complete - retrieval metrics are logged and feedback can be collected
 

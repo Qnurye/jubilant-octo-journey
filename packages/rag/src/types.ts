@@ -110,14 +110,24 @@ export interface QueryContext {
 }
 
 /**
+ * Confidence indicator for streaming
+ */
+export interface ConfidenceInfo {
+  level: 'high' | 'medium' | 'low' | 'insufficient';
+  hasInsufficientEvidence: boolean;
+  topScore: number;
+}
+
+/**
  * A chunk of streamed response data
  */
 export interface StreamChunk {
-  type: 'token' | 'citation' | 'metadata' | 'done' | 'error';
+  type: 'token' | 'citation' | 'metadata' | 'done' | 'error' | 'confidence';
   content?: string;
   citation?: Citation;
   metadata?: ResponseMetadata;
   error?: string;
+  confidence?: ConfidenceInfo;
 }
 
 /**
