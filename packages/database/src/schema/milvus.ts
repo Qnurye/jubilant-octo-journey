@@ -1,7 +1,7 @@
 import { MilvusClient, DataType } from '@zilliz/milvus2-sdk-node';
 
 export const COLLECTION_NAME = 'knowledge_chunks';
-export const VECTOR_DIM = 1536;
+export const VECTOR_DIM = 4096;
 
 export const initMilvusCollection = async (client: MilvusClient) => {
   console.log(`Checking Milvus collection: ${COLLECTION_NAME}...`);

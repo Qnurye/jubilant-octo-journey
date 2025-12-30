@@ -7,8 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun run --filter '*' dev",
-    "build": "bun run --filter '*' build",
+    "dev": "bun --env-file=.env run --filter '*' dev",
+    "build": "bun --env-file=.env run --filter '*' build",
     "lint": "bun run --filter '*' lint",
     "service-check": "bun --elide-lines=0 run --filter '@jubilant/database' infra-overview",
     "type-check": "bun run --filter '*' type-check",

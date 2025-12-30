@@ -7,7 +7,7 @@
  * @module @jubilant/rag/retrieval/graph
  */
 
-import type { Driver, Session } from 'neo4j-driver';
+import { int, type Driver, type Session } from 'neo4j-driver';
 import type { RetrievalResult, ChunkMetadata } from '../types';
 
 /**
@@ -165,7 +165,7 @@ export class Neo4jGraphRetriever {
     const result = await session.run(cypher, {
       query: escapedQuery,
       relationshipTypes: this.config.relationshipTypes,
-      topK,
+      topK: int(topK),
     });
 
     return this.transformResults(result.records);
@@ -242,7 +242,7 @@ export class Neo4jGraphRetriever {
     const result = await session.run(cypher, {
       keywords,
       relationshipTypes: this.config.relationshipTypes,
-      topK,
+      topK: int(topK),
     });
 
     return this.transformResults(result.records);

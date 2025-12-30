@@ -83,13 +83,22 @@ export class MilvusChunkStorage {
     for (let i = 0; i < chunks.length; i += this.config.milvusBatchSize) {
       const batch = chunks.slice(i, i + this.config.milvusBatchSize);
 
-      const data = batch.map((chunk, idx) => ({
-        chunk_id: i + idx + 1, // Sequential IDs within this ingestion
-        vector: chunk.embedding,
-        content_text: chunk.content,
-        metadata: JSON.stringify(chunk.metadata),
-        topic_tag: this.extractTopicTag(chunk.metadata),
-      }));
+      const data = batch.map((chunk) => {
+        // Generate a unique ID from the chunk UUID
+        // We use the first 13 hex characters (52 bits) to ensure it fits in a JavaScript Number (MAX_SAFE_INTEGER is 53 bits)
+        // This avoids BigInt serialization issues with the Milvus SDK while maintaining collision resistance
+        const crypto = require('crypto');
+        const hash = crypto.createHash('sha256').update(chunk.id).digest('hex');
+        const chunkId = parseInt(hash.slice(0, 13), 16);
+
+        return {
+          chunk_id: chunkId,
+          vector: chunk.embedding,
+          content_text: chunk.content,
+          metadata: JSON.stringify(chunk.metadata),
+          topic_tag: this.extractTopicTag(chunk.metadata),
+        };
+      });
 
       await this.client.insert({
         collection_name: this.config.collectionName,

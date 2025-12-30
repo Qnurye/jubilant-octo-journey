@@ -31,16 +31,15 @@ interface ResponseMetadata {
 interface ResponseStreamProps {
   query: string;
   apiUrl: string;
-  onComplete?: (response: { answer: string; citations: Citation[]; metadata: ResponseMetadata | null }) => void;
+  onComplete?: (response: {
+    answer: string;
+    citations: Citation[];
+    metadata: ResponseMetadata | null;
+  }) => void;
   onError?: (error: string) => void;
 }
 
-export function ResponseStream({
-  query,
-  apiUrl,
-  onComplete,
-  onError,
-}: ResponseStreamProps) {
+export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseStreamProps) {
   const [answer, setAnswer] = useState('');
   const [citations, setCitations] = useState<Citation[]>([]);
   const [metadata, setMetadata] = useState<ResponseMetadata | null>(null);
@@ -227,13 +226,13 @@ export function ResponseStream({
 
       {/* Confidence indicator */}
       {(metadata || confidenceInfo) && (
-        <ConfidenceIndicator confidence={metadata?.confidence || confidenceInfo?.level || 'medium'} />
+        <ConfidenceIndicator
+          confidence={metadata?.confidence || confidenceInfo?.level || 'medium'}
+        />
       )}
 
       {/* Citations */}
-      {citations.length > 0 && (
-        <CitationList citations={citations} />
-      )}
+      {citations.length > 0 && <CitationList citations={citations} />}
 
       {/* Metadata footer */}
       {metadata && !isStreaming && (
@@ -261,10 +260,8 @@ function UncertaintyBanner({ confidenceLevel }: { confidenceLevel: string }) {
     >
       <div className="flex items-start gap-3">
         <div
-          className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-            isInsufficient
-              ? 'bg-amber-100 dark:bg-amber-800'
-              : 'bg-yellow-100 dark:bg-yellow-800'
+          className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
+            isInsufficient ? 'bg-amber-100 dark:bg-amber-800' : 'bg-yellow-100 dark:bg-yellow-800'
           }`}
         >
           <WarningIcon
@@ -283,9 +280,7 @@ function UncertaintyBanner({ confidenceLevel }: { confidenceLevel: string }) {
                 : 'text-yellow-800 dark:text-yellow-300'
             }`}
           >
-            {isInsufficient
-              ? 'Limited Information Available'
-              : 'Lower Confidence Response'}
+            {isInsufficient ? 'Limited Information Available' : 'Lower Confidence Response'}
           </h4>
           <p
             className={`mt-1 text-sm ${
@@ -349,7 +344,9 @@ function ConfidenceIndicator({ confidence }: { confidence: string }) {
   const { label, color, icon } = config[confidence as keyof typeof config] || config.medium;
 
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${color}`}>
+    <div
+      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${color}`}
+    >
       <span>{icon}</span>
       <span>{label}</span>
     </div>
@@ -379,15 +376,17 @@ function MarkdownContent({ content }: { content: string }) {
 
         // Inline code and citations
         const processed = trimmed
-          .replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sm">$1</code>')
-          .replace(/\[(\d+)\]/g, '<sup class="text-blue-600 dark:text-blue-400 font-medium">[$1]</sup>');
+          .replace(
+            /`([^`]+)`/g,
+            '<code class="bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sm">$1</code>',
+          )
+          .replace(
+            /\[(\d+)\]/g,
+            '<sup class="text-blue-600 dark:text-blue-400 font-medium">[$1]</sup>',
+          );
 
         return (
-          <p
-            key={i}
-            className="mb-3 last:mb-0"
-            dangerouslySetInnerHTML={{ __html: processed }}
-          />
+          <p key={i} className="mb-3 last:mb-0" dangerouslySetInnerHTML={{ __html: processed }} />
         );
       })}
     </>
@@ -397,9 +396,18 @@ function MarkdownContent({ content }: { content: string }) {
 function LoadingDots() {
   return (
     <span className="flex gap-1">
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      <span
+        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+        style={{ animationDelay: '0ms' }}
+      />
+      <span
+        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+        style={{ animationDelay: '150ms' }}
+      />
+      <span
+        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+        style={{ animationDelay: '300ms' }}
+      />
     </span>
   );
 }
@@ -407,7 +415,12 @@ function LoadingDots() {
 function ErrorIcon() {
   return (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
     </svg>
   );
 }
