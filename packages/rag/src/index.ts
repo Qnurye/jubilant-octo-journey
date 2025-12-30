@@ -39,6 +39,7 @@ export type {
   HybridRetrieverConfig,
   HybridRetrievalResult,
   RetrievalMetrics,
+  RetrievalStrategy,
 } from './retrieval/hybrid';
 
 export {
@@ -63,8 +64,8 @@ export type {
 export { Qwen3Embedding, createEmbedder } from './generation/embedder';
 export type { Qwen3EmbeddingConfig } from './generation/embedder';
 
-export { Qwen3LLM, createLLM } from './generation/llm';
-export type { Qwen3LLMConfig, ChatMessage, LLMStreamChunk } from './generation/llm';
+export { Qwen3LLM, createLLM, LLMServiceError, classifyLLMError } from './generation/llm';
+export type { Qwen3LLMConfig, ChatMessage, LLMStreamChunk, LLMErrorType, RetryConfig } from './generation/llm';
 
 export {
   LLMHealthChecker,
@@ -195,6 +196,7 @@ export {
   isValidTransition,
   getNextStatus,
   STATUS_TRANSITIONS,
+  DocumentSizeError,
 } from './ingestion/pipeline';
 export type {
   IngestionPipelineConfig,
@@ -204,6 +206,8 @@ export type {
   IngestionJob,
   DocumentRecord,
   DatabaseOperations,
+  DocumentSizeErrorType,
+  DocumentSizeValidation,
 } from './ingestion/pipeline';
 
 // ============================================================================
@@ -212,6 +216,7 @@ export type {
 
 export {
   parseDocument,
+  parseDocumentSafe,
   getParser,
   detectFormat,
   validateSource,
@@ -224,9 +229,12 @@ export {
   createPDFParser,
   TextParser,
   createTextParser,
+  DocumentParseError,
+  classifyParseError,
 } from './ingestion/parsers';
 export type {
   DocumentFormat,
   ParsedDocument,
   DocumentParser,
+  DocumentParseErrorType,
 } from './ingestion/parsers';

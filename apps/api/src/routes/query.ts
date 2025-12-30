@@ -5,6 +5,8 @@
  * - POST /api/query - Submit a question, get complete response
  * - POST /api/query/stream - Submit a question, get streaming SSE response
  *
+ * Includes request timeout handling (T086) with 3 second first token target.
+ *
  * @module apps/api/routes/query
  */
 
@@ -22,8 +24,72 @@ import {
   type ErrorResponse,
   type DetailedRetrievalMetrics,
 } from '@jubilant/rag';
+import { queryThrottleMiddleware, queryThrottle } from '../middleware/throttle';
 
 const query = new Hono();
+
+// Apply throttle middleware to all query routes (T087/T088)
+query.use('*', queryThrottleMiddleware);
+
+// ============================================================================
+// Timeout Configuration (T086)
+// ============================================================================
+
+/**
+ * Timeout thresholds for query processing
+ */
+const TIMEOUT_CONFIG = {
+  /** Target time for first token in streaming mode (3 seconds) */
+  FIRST_TOKEN_TARGET_MS: 3000,
+  /** Maximum time for complete query (2 minutes) */
+  COMPLETE_QUERY_MAX_MS: 120000,
+  /** Retrieval phase timeout (10 seconds) */
+  RETRIEVAL_TIMEOUT_MS: 10000,
+  /** Generation phase timeout (90 seconds) */
+  GENERATION_TIMEOUT_MS: 90000,
+};
+
+/**
+ * Create a timeout promise that rejects after specified milliseconds
+ */
+function createTimeoutPromise<T>(
+  ms: number,
+  errorMessage: string
+): Promise<T> {
+  return new Promise((_, reject) => {
+    setTimeout(() => {
+      reject(new QueryTimeoutError(errorMessage, ms));
+    }, ms);
+  });
+}
+
+/**
+ * Custom error class for query timeouts
+ */
+class QueryTimeoutError extends Error {
+  public readonly timeoutMs: number;
+  public readonly isTimeout = true;
+
+  constructor(message: string, timeoutMs: number) {
+    super(message);
+    this.name = 'QueryTimeoutError';
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+/**
+ * Execute a promise with a timeout
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<T> {
+  return Promise.race([
+    promise,
+    createTimeoutPromise<T>(timeoutMs, errorMessage),
+  ]);
+}
 
 // ============================================================================
 // Validation Schemas
@@ -182,6 +248,7 @@ async function logRetrievalMetrics(
  * POST /api/query
  *
  * Submit a question and receive a complete response with citations.
+ * Includes timeout handling (T086) with 2 minute max processing time.
  */
 query.post(
   '/',
@@ -210,7 +277,12 @@ query.post(
         topicFilter: body.topicFilter,
       };
 
-      const response = await ragPipeline.query(request);
+      // Execute query with timeout (T086)
+      const response = await withTimeout(
+        ragPipeline.query(request),
+        TIMEOUT_CONFIG.COMPLETE_QUERY_MAX_MS,
+        `Query processing timed out after ${TIMEOUT_CONFIG.COMPLETE_QUERY_MAX_MS / 1000} seconds`
+      );
 
       // Log metrics asynchronously
       const executionTimeMs = Date.now() - startTime;
@@ -227,6 +299,19 @@ query.post(
     } catch (error) {
       console.error('Query processing error:', error);
 
+      // Handle timeout errors specifically (T086)
+      if (error instanceof QueryTimeoutError) {
+        const errorResponse: ErrorResponse = {
+          error: 'QUERY_TIMEOUT',
+          message: error.message,
+          details: {
+            timeoutMs: error.timeoutMs,
+            elapsedMs: Date.now() - startTime,
+          },
+        };
+        return c.json(errorResponse, 504); // Gateway Timeout
+      }
+
       const errorResponse: ErrorResponse = {
         error: 'QUERY_PROCESSING_ERROR',
         message: error instanceof Error ? error.message : 'Failed to process query',
@@ -241,6 +326,7 @@ query.post(
  * POST /api/query/stream
  *
  * Submit a question and receive a streaming SSE response.
+ * Includes first token timing tracking (T086) with 3 second target.
  */
 query.post(
   '/stream',
@@ -270,13 +356,39 @@ query.post(
       };
 
       return streamSSE(c, async (stream) => {
+        let firstTokenSent = false;
+        let firstTokenLatencyMs: number | undefined;
+
         try {
           let queryId: string | undefined;
 
           for await (const chunk of ragPipeline.queryStream(request)) {
+            // Track first token latency (T086)
+            if (!firstTokenSent && chunk.type === 'token') {
+              firstTokenSent = true;
+              firstTokenLatencyMs = Date.now() - startTime;
+
+              // Log warning if first token exceeds target
+              if (firstTokenLatencyMs > TIMEOUT_CONFIG.FIRST_TOKEN_TARGET_MS) {
+                console.warn(
+                  `First token latency exceeded target: ${firstTokenLatencyMs}ms ` +
+                  `(target: ${TIMEOUT_CONFIG.FIRST_TOKEN_TARGET_MS}ms)`
+                );
+              }
+            }
+
             // Capture queryId from metadata
             if (chunk.type === 'metadata' && chunk.metadata) {
               queryId = chunk.metadata.queryId;
+
+              // Add first token latency to metadata
+              const enrichedMetadata = {
+                ...chunk.metadata,
+                firstTokenLatencyMs,
+                firstTokenTargetMet: firstTokenLatencyMs
+                  ? firstTokenLatencyMs <= TIMEOUT_CONFIG.FIRST_TOKEN_TARGET_MS
+                  : undefined,
+              };
 
               // Log metrics when we have them
               const executionTimeMs = Date.now() - startTime;
@@ -288,6 +400,16 @@ query.post(
                 chunk.metadata.graphResultCount,
                 body.includeGraph ? 'hybrid' : 'vector_only'
               ).catch(console.error);
+
+              // Send enriched metadata
+              await stream.writeSSE({
+                event: chunk.type,
+                data: JSON.stringify({
+                  ...chunk,
+                  metadata: enrichedMetadata,
+                }),
+              });
+              continue;
             }
 
             await stream.writeSSE({
@@ -301,11 +423,18 @@ query.post(
           }
         } catch (error) {
           console.error('Streaming error:', error);
+
+          // Determine if this was a timeout
+          const isTimeout = error instanceof QueryTimeoutError ||
+            (error instanceof Error && error.message.toLowerCase().includes('timeout'));
+
           await stream.writeSSE({
             event: 'error',
             data: JSON.stringify(
               createErrorChunk(
-                error instanceof Error ? error.message : 'Streaming failed'
+                isTimeout
+                  ? 'Query generation timed out. Please try a shorter or simpler question.'
+                  : error instanceof Error ? error.message : 'Streaming failed'
               )
             ),
           });
@@ -323,5 +452,42 @@ query.post(
     }
   }
 );
+
+/**
+ * GET /api/query/status
+ *
+ * Get current query processing status and throttle metrics (T087).
+ * Useful for monitoring and load balancing.
+ */
+query.get('/status', (c) => {
+  const status = queryThrottle.getStatus();
+  const metrics = queryThrottle.getMetrics();
+
+  return c.json({
+    status: 'operational',
+    capacity: {
+      maxConcurrent: 10,
+      active: status.active,
+      available: status.available,
+      queued: status.queued,
+      queueCapacity: status.queueCapacity,
+    },
+    metrics: {
+      totalRequests: metrics.totalRequests,
+      totalQueued: metrics.totalQueued,
+      totalRejected: metrics.totalRejected,
+      totalTimedOut: metrics.totalTimedOut,
+      avgQueueWaitMs: Math.round(metrics.avgQueueWaitMs),
+      peakConcurrent: metrics.peakConcurrent,
+      peakQueueSize: metrics.peakQueueSize,
+    },
+    health: {
+      healthy: status.active < 10 && status.queued < 20,
+      underLoad: status.active >= 8 || status.queued >= 10,
+      atCapacity: status.active >= 10,
+      queuedRequests: status.queued > 0,
+    },
+  });
+});
 
 export default query;

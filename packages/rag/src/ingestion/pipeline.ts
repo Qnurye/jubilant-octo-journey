@@ -120,6 +120,10 @@ export interface IngestionPipelineConfig {
   extractor: Partial<TripleExtractorConfig>;
   /** Whether to extract triples (can be skipped for faster ingestion) */
   extractTriples: boolean;
+  /** Maximum document size in characters (T085) */
+  maxDocumentSize: number;
+  /** Maximum number of chunks per document (T085) */
+  maxChunksPerDocument: number;
 }
 
 const DEFAULT_CONFIG: IngestionPipelineConfig = {
@@ -128,7 +132,56 @@ const DEFAULT_CONFIG: IngestionPipelineConfig = {
   storage: {},
   extractor: {},
   extractTriples: true,
+  maxDocumentSize: 10_000_000, // 10MB max
+  maxChunksPerDocument: 1000,  // 1000 chunks max
 };
+
+// ============================================================================
+// Document Size Error Types (T085)
+// ============================================================================
+
+/**
+ * Error types for document size issues
+ */
+export type DocumentSizeErrorType =
+  | 'DOCUMENT_TOO_LARGE'
+  | 'TOO_MANY_CHUNKS';
+
+/**
+ * Custom error class for document size errors
+ */
+export class DocumentSizeError extends Error {
+  public readonly errorType: DocumentSizeErrorType;
+  public readonly actualSize: number;
+  public readonly maxSize: number;
+  public readonly documentId?: string;
+
+  constructor(
+    message: string,
+    errorType: DocumentSizeErrorType,
+    actualSize: number,
+    maxSize: number,
+    documentId?: string
+  ) {
+    super(message);
+    this.name = 'DocumentSizeError';
+    this.errorType = errorType;
+    this.actualSize = actualSize;
+    this.maxSize = maxSize;
+    this.documentId = documentId;
+  }
+}
+
+/**
+ * Document size validation result
+ */
+export interface DocumentSizeValidation {
+  valid: boolean;
+  error?: DocumentSizeError;
+  actualSize: number;
+  maxSize: number;
+  sizePercentage: number;
+}
 
 /**
  * Progress callback for pipeline stages
@@ -444,14 +497,95 @@ export class IngestionPipeline {
   }
 
   /**
+   * Validate document size before processing (T085)
+   *
+   * @param content - Document content to validate
+   * @param documentId - Optional document ID for error context
+   * @returns Validation result
+   */
+  validateDocumentSize(content: string, documentId?: string): DocumentSizeValidation {
+    const actualSize = content.length;
+    const maxSize = this.config.maxDocumentSize;
+    const sizePercentage = (actualSize / maxSize) * 100;
+
+    if (actualSize > maxSize) {
+      const error = new DocumentSizeError(
+        `Document exceeds maximum size: ${(actualSize / 1_000_000).toFixed(2)}MB ` +
+        `(max: ${(maxSize / 1_000_000).toFixed(2)}MB). ` +
+        `Consider splitting the document into smaller parts.`,
+        'DOCUMENT_TOO_LARGE',
+        actualSize,
+        maxSize,
+        documentId
+      );
+
+      return {
+        valid: false,
+        error,
+        actualSize,
+        maxSize,
+        sizePercentage,
+      };
+    }
+
+    return {
+      valid: true,
+      actualSize,
+      maxSize,
+      sizePercentage,
+    };
+  }
+
+  /**
+   * Validate chunk count after chunking (T085)
+   *
+   * @param chunkCount - Number of chunks produced
+   * @param documentId - Optional document ID for error context
+   * @returns Validation result
+   */
+  validateChunkCount(chunkCount: number, documentId?: string): DocumentSizeValidation {
+    const maxChunks = this.config.maxChunksPerDocument;
+    const percentage = (chunkCount / maxChunks) * 100;
+
+    if (chunkCount > maxChunks) {
+      const error = new DocumentSizeError(
+        `Document produces too many chunks: ${chunkCount} ` +
+        `(max: ${maxChunks}). ` +
+        `Consider using larger chunk sizes or splitting the document.`,
+        'TOO_MANY_CHUNKS',
+        chunkCount,
+        maxChunks,
+        documentId
+      );
+
+      return {
+        valid: false,
+        error,
+        actualSize: chunkCount,
+        maxSize: maxChunks,
+        sizePercentage: percentage,
+      };
+    }
+
+    return {
+      valid: true,
+      actualSize: chunkCount,
+      maxSize: maxChunks,
+      sizePercentage: percentage,
+    };
+  }
+
+  /**
    * Ingest a document synchronously (without job tracking)
    *
    * For simpler use cases where job tracking isn't needed.
+   * Includes document size validation (T085).
    *
    * @param content - Document content
    * @param metadata - Document metadata
    * @param onProgress - Optional progress callback
    * @returns Embedded chunks
+   * @throws DocumentSizeError if document exceeds size limits
    */
   async ingestDirect(
     content: string,
@@ -462,9 +596,35 @@ export class IngestionPipeline {
     },
     onProgress?: PipelineProgressCallback
   ): Promise<EmbeddedChunk[]> {
+    // Validate document size before processing (T085)
+    const sizeValidation = this.validateDocumentSize(content, metadata.documentId);
+    if (!sizeValidation.valid && sizeValidation.error) {
+      throw sizeValidation.error;
+    }
+
+    // Log warning if document is approaching size limit
+    if (sizeValidation.sizePercentage > 80) {
+      console.warn(
+        `Document ${metadata.documentId} is ${sizeValidation.sizePercentage.toFixed(1)}% of maximum size`
+      );
+    }
+
     // Chunk
     onProgress?.({ stage: 'chunking', message: 'Chunking content...', percentage: 10 });
     const chunks = this.chunker.chunk(content, metadata);
+
+    // Validate chunk count (T085)
+    const chunkValidation = this.validateChunkCount(chunks.length, metadata.documentId);
+    if (!chunkValidation.valid && chunkValidation.error) {
+      throw chunkValidation.error;
+    }
+
+    // Log warning if chunk count is approaching limit
+    if (chunkValidation.sizePercentage > 80) {
+      console.warn(
+        `Document ${metadata.documentId} produces ${chunkValidation.sizePercentage.toFixed(1)}% of maximum chunks`
+      );
+    }
 
     // Embed
     onProgress?.({ stage: 'embedding', message: 'Generating embeddings...', percentage: 30 });

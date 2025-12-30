@@ -233,25 +233,25 @@ Based on plan.md structure (monorepo with Bun workspaces):
 
 ### Error Handling
 
-- [ ] T081 Implement graceful error handling for LLM service unavailability in packages/rag/src/generation/llm.ts
-- [ ] T082 [P] Add error handling for malformed/corrupt documents in ingestion pipeline
-- [ ] T083 [P] Implement graceful degradation when graph returns empty but vector has results
-- [ ] T084 [P] Implement graceful degradation when vector returns empty but graph has results
+- [x] T081 Implement graceful error handling for LLM service unavailability in packages/rag/src/generation/llm.ts
+- [x] T082 [P] Add error handling for malformed/corrupt documents in ingestion pipeline
+- [x] T083 [P] Implement graceful degradation when graph returns empty but vector has results
+- [x] T084 [P] Implement graceful degradation when vector returns empty but graph has results
 
 ### Edge Cases
 
-- [ ] T085 Handle extremely long documents exceeding context limits in packages/rag/src/ingestion/pipeline.ts
-- [ ] T086 Add request timeout handling (3 second first token target) in apps/api/src/routes/query.ts
+- [x] T085 Handle extremely long documents exceeding context limits in packages/rag/src/ingestion/pipeline.ts
+- [x] T086 Add request timeout handling (3 second first token target) in apps/api/src/routes/query.ts
 
 ### Performance & Concurrency
 
-- [ ] T087 Verify concurrent query handling (10-20 concurrent requests) in apps/api/
-- [ ] T088 Add request queue/throttling if needed for LLM endpoint
+- [x] T087 Verify concurrent query handling (10-20 concurrent requests) in apps/api/
+- [x] T088 Add request queue/throttling if needed for LLM endpoint
 
 ### Documentation
 
-- [ ] T089 Validate quickstart.md end-to-end (all steps work)
-- [ ] T090 Export RAG package types for apps/web type checking
+- [x] T089 Validate quickstart.md end-to-end (all steps work)
+- [x] T090 Export RAG package types for apps/web type checking
 
 ---
 

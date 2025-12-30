@@ -40,6 +40,15 @@ const DEFAULT_CONFIG: HybridRetrieverConfig = {
 };
 
 /**
+ * Retrieval strategy used based on availability
+ */
+export type RetrievalStrategy =
+  | 'hybrid'         // Both vector and graph returned results
+  | 'vector_only'    // Only vector returned results (graph empty/failed)
+  | 'graph_only'     // Only graph returned results (vector empty/failed)
+  | 'degraded';      // Both sources had issues
+
+/**
  * Retrieval metrics for logging
  */
 export interface RetrievalMetrics {
@@ -55,6 +64,12 @@ export interface RetrievalMetrics {
   fusionMs: number;
   overlapCount: number;
   rrfTopScore: number | null;
+  /** Strategy used for retrieval (T083/T084) */
+  strategy?: RetrievalStrategy;
+  /** Whether vector search had an error */
+  vectorError?: string;
+  /** Whether graph search had an error */
+  graphError?: string;
 }
 
 /**
@@ -140,7 +155,12 @@ export class HybridRetriever {
   }
 
   /**
-   * Perform hybrid retrieval with parallel execution
+   * Perform hybrid retrieval with parallel execution and graceful degradation
+   *
+   * Graceful Degradation (T083/T084):
+   * - If graph returns empty but vector has results: use vector-only results
+   * - If vector returns empty but graph has results: use graph-only results
+   * - Both cases are logged in metrics for monitoring
    *
    * @param query - The search query
    * @param topK - Number of final results
@@ -168,29 +188,57 @@ export class HybridRetriever {
       fusionMs: 0,
       overlapCount: 0,
       rrfTopScore: null,
+      strategy: 'hybrid',
     };
 
-    // Execute retrieval in parallel
-    const retrievalStart = Date.now();
+    // Execute retrieval in parallel with error handling for graceful degradation
+    type RetrievalResultWithError = {
+      results: RetrievalResult[];
+      type: 'vector' | 'graph';
+      duration: number;
+      error?: string;
+    };
 
-    const retrievalPromises: Promise<{ results: RetrievalResult[]; type: 'vector' | 'graph'; duration: number }>[] = [];
+    const retrievalPromises: Promise<RetrievalResultWithError>[] = [];
 
-    // Vector search
+    // Vector search with error handling (T084)
     retrievalPromises.push(
-      (async () => {
+      (async (): Promise<RetrievalResultWithError> => {
         const start = Date.now();
-        const results = await this.vectorRetriever.search(query, k, topicFilter);
-        return { results, type: 'vector' as const, duration: Date.now() - start };
+        try {
+          const results = await this.vectorRetriever.search(query, k, topicFilter);
+          return { results, type: 'vector' as const, duration: Date.now() - start };
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.warn(`Vector search failed (graceful degradation): ${errorMessage}`);
+          return {
+            results: [],
+            type: 'vector' as const,
+            duration: Date.now() - start,
+            error: errorMessage,
+          };
+        }
       })()
     );
 
-    // Graph search (if enabled)
+    // Graph search (if enabled) with error handling (T083)
     if (useGraph) {
       retrievalPromises.push(
-        (async () => {
+        (async (): Promise<RetrievalResultWithError> => {
           const start = Date.now();
-          const results = await this.graphRetriever.search(query, k);
-          return { results, type: 'graph' as const, duration: Date.now() - start };
+          try {
+            const results = await this.graphRetriever.search(query, k);
+            return { results, type: 'graph' as const, duration: Date.now() - start };
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.warn(`Graph search failed (graceful degradation): ${errorMessage}`);
+            return {
+              results: [],
+              type: 'graph' as const,
+              duration: Date.now() - start,
+              error: errorMessage,
+            };
+          }
         })()
       );
     }
@@ -199,26 +247,58 @@ export class HybridRetriever {
 
     // Collect results and metrics
     const resultLists: RetrievalResult[][] = [];
+    let vectorResults: RetrievalResult[] = [];
+    let graphResults: RetrievalResult[] = [];
 
-    for (const { results, type, duration } of retrievalResults) {
-      resultLists.push(results);
-
+    for (const { results, type, duration, error } of retrievalResults) {
       if (type === 'vector') {
+        vectorResults = results;
         metrics.vectorSearchMs = duration;
         metrics.vectorResultCount = results.length;
+        if (error) {
+          metrics.vectorError = error;
+        }
         if (results.length > 0) {
           metrics.vectorTopScore = results[0].score;
           metrics.vectorAvgScore =
             results.reduce((sum, r) => sum + r.score, 0) / results.length;
         }
       } else {
+        graphResults = results;
         metrics.graphTraversalMs = duration;
         metrics.graphResultCount = results.length;
         metrics.graphMaxDepth = this.graphRetriever.maxDepth;
+        if (error) {
+          metrics.graphError = error;
+        }
       }
     }
 
-    // Perform RRF fusion
+    // Determine strategy based on results availability (T083/T084)
+    const hasVectorResults = vectorResults.length > 0;
+    const hasGraphResults = graphResults.length > 0;
+
+    if (hasVectorResults && hasGraphResults) {
+      // Both sources have results - use hybrid fusion
+      metrics.strategy = 'hybrid';
+      resultLists.push(vectorResults, graphResults);
+    } else if (hasVectorResults && !hasGraphResults) {
+      // Only vector has results (T083: graph empty)
+      metrics.strategy = 'vector_only';
+      resultLists.push(vectorResults);
+      console.info('Graceful degradation: Using vector-only results (graph returned empty)');
+    } else if (!hasVectorResults && hasGraphResults) {
+      // Only graph has results (T084: vector empty)
+      metrics.strategy = 'graph_only';
+      resultLists.push(graphResults);
+      console.info('Graceful degradation: Using graph-only results (vector returned empty)');
+    } else {
+      // Neither source has results
+      metrics.strategy = 'degraded';
+      console.warn('Both vector and graph retrieval returned empty results');
+    }
+
+    // Perform RRF fusion (works with single list too)
     const fusionStart = Date.now();
     const fusedMap = reciprocalRankFusion(resultLists, this.config.rrfK);
 
