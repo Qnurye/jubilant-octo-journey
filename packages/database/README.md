@@ -69,7 +69,7 @@ async function main() {
   // Use Milvus for vector search
   const searchResult = await db.milvus.search({
     collection_name: 'knowledge_chunks',
-    vector: [0.1, 0.2, ...], // 4096-dim embedding (Qwen3-Embedding-8B)
+    vector: [0.1, 0.2, ...], // 1536-dim embedding
     limit: 5,
   });
 
@@ -178,7 +178,7 @@ The `knowledge_chunks` collection schema:
 | Field | Type | Description |
 |-------|------|-------------|
 | `chunk_id` | Int64 (PK) | Unique chunk identifier |
-| `vector` | FloatVector[4096] | Embedding vector |
+| `vector` | FloatVector[1536] | Embedding vector |
 | `content_text` | VarChar | Text content |
 | `metadata` | JSON | Source URL, page, author |
 | `topic_tag` | VarChar | Topic for filtering |
@@ -198,14 +198,24 @@ Relationships:
 ## Testing
 
 ```bash
-# Run all tests
-bun run test
+# Run all tests (requires running databases and .env file)
+bun --env-file=../../.env test
 
 # Run unit tests only
-bun run test tests/unit
+bun --env-file=../../.env test tests/unit
 
 # Run integration tests (requires running databases)
-bun run test tests/integration
+bun --env-file=../../.env test tests/integration
+```
+
+**Note**: Tests require Docker containers running and environment variables set. From the repository root:
+
+```bash
+# Start databases
+docker compose -f infrastructure/docker-compose.yml up -d
+
+# Run tests
+cd packages/database && bun --env-file=../../.env test
 ```
 
 ## API Reference
