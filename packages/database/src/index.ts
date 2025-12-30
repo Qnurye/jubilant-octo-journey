@@ -161,7 +161,15 @@ export const db = new Proxy({} as DatabaseManager, {
     if (!instance) {
       instance = new DatabaseManager();
     }
-    return (instance as unknown as Record<string | symbol, unknown>)[prop];
+    
+    const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
+    
+    // Bind functions to the instance to preserve 'this' context
+    if (typeof value === 'function') {
+      return value.bind(instance);
+    }
+    
+    return value;
   },
 });
 

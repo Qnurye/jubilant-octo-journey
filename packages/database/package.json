@@ -6,7 +6,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "generate": "drizzle-kit generate:pg",
-    "migrate": "drizzle-kit push:pg"
+    "migrate": "drizzle-kit push:pg",
+    "infra-overview": "bun --env-file=../../.env scripts/infra-scaffold.ts"
   },
   "dependencies": {
     "@zilliz/milvus2-sdk-node": "^2.3.3",
