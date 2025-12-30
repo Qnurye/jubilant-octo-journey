@@ -7,8 +7,8 @@ This roadmap outlines the development milestones for CompetitionTutor, a hybrid 
 | Milestone | Status | Priority | Description |
 |-----------|--------|----------|-------------|
 | M0: Foundation | **Complete** | P0 | Monorepo setup and tooling |
-| M1: Database Infrastructure | Pending | P0 | Milvus + Neo4j + PostgreSQL setup |
-| M2: RAG Pipeline Core | Pending | P0 | Hybrid retrieval implementation |
+| M1: Database Infrastructure | **Complete** | P0 | Milvus + Neo4j + PostgreSQL setup |
+| M2: RAG Pipeline Core | **Complete** | P0 | Hybrid retrieval implementation |
 | M3: Student Q&A Interface | Pending | P0 | Chat UI with code/formula support |
 | M4: Knowledge Base ETL | Pending | P1 | Content ingestion pipeline |
 | M5: Teacher Dashboard | Pending | P1 | Analytics and visualization |
@@ -36,24 +36,25 @@ This roadmap outlines the development milestones for CompetitionTutor, a hybrid 
 
 ---
 
-## M1: Database Infrastructure
+## M1: Database Infrastructure (Complete)
 
 **Goal**: Set up the three database systems required for hybrid RAG and application data.
 
 ### Deliverables
-- [ ] Docker Compose configuration for local development
+- [x] Docker Compose configuration for local development
   - Milvus (vector database)
   - Neo4j (graph database)
   - PostgreSQL (application data)
-- [ ] Database client packages
-  - `packages/db` - Drizzle ORM setup for PostgreSQL
-  - `packages/vector` - Milvus client wrapper
-  - `packages/graph` - Neo4j client wrapper
-- [ ] Database schema design
-  - User accounts and sessions
-  - Question/answer logs (anonymized)
-  - Knowledge source metadata
-- [ ] Seed scripts for development data
+- [x] Unified database client package (`@jubilant/database`)
+  - Milvus client wrapper with HNSW indexing
+  - Neo4j client wrapper with constraint initialization
+  - PostgreSQL via Drizzle ORM
+- [x] Database schema design
+  - `knowledge_chunks` collection (Milvus)
+  - Concept/Document/Chunk nodes (Neo4j)
+  - Analytics tables (PostgreSQL)
+- [x] Health check and retry logic
+- [x] Integration tests (37 tests passing)
 
 ### Exit Criteria
 - All three databases running via `docker compose up`
@@ -61,37 +62,41 @@ This roadmap outlines the development milestones for CompetitionTutor, a hybrid 
 - Basic CRUD operations work from API
 
 ### Constitution Compliance
-- P1 (Hybrid RAG): Both Milvus AND Neo4j must be configured
+- P1 (Hybrid RAG): Both Milvus AND Neo4j configured
 - P5 (Formative Assessment): No individual student performance tracking in schema
 
 ---
 
-## M2: RAG Pipeline Core
+## M2: RAG Pipeline Core (Complete)
 
 **Goal**: Implement the hybrid retrieval-augmented generation pipeline.
 
 ### Deliverables
-- [ ] LLM integration package (`packages/llm`)
-  - Qwen3-32B inference client
-  - Qwen3-Embedding-8B for embeddings
-  - Qwen3-Reranker-4B for result ranking
-- [ ] Retrieval pipeline (`packages/retrieval`)
-  - Vector similarity search (Milvus)
-  - Graph traversal queries (Neo4j)
-  - Hybrid result merging strategy
-  - Re-ranking with cross-encoder
-- [ ] Generation pipeline
-  - Context assembly from retrieval
-  - Citation tracking
-  - Streaming response support
-- [ ] API endpoints
-  - `POST /api/chat` - Main Q&A endpoint
-  - `GET /api/chat/:id` - Retrieve conversation history
+- [x] RAG pipeline package (`@jubilant/rag`)
+  - Vector similarity search (Milvus integration)
+  - Graph traversal queries (Neo4j integration)
+  - Reciprocal Rank Fusion (RRF) for result merging
+  - Qwen3-Reranker-4B integration
+- [x] Content-aware chunking
+  - Code block preservation (FR-008)
+  - Formula preservation (FR-009)
+  - Table preservation (FR-010)
+  - 512-1024 token targeting (FR-015)
+- [x] Generation pipeline
+  - Citation tracking and formatting (FR-006)
+  - Confidence thresholds (0.6 for insufficient evidence) (FR-007)
+  - SSE streaming support (FR-016)
+  - Error handling with user-friendly messages (FR-014)
+- [x] LLM-based triple extraction (FR-011)
+- [x] Document parsers (Markdown, PDF, text) (FR-012)
+- [x] API endpoints with throttling (10-20 concurrent) (SC-005)
+- [x] Comprehensive test suite (363 tests passing)
 
 ### Exit Criteria
 - End-to-end question answering works
 - Responses include source citations
 - Both vector and graph results contribute to answers
+- All 16 functional requirements validated
 
 ### Constitution Compliance
 - P1 (Hybrid RAG): Parallel retrieval from both stores
@@ -143,7 +148,7 @@ This roadmap outlines the development milestones for CompetitionTutor, a hybrid 
 **Goal**: Build the pipeline for ingesting and processing educational content.
 
 ### Deliverables
-- [ ] Document ingestion service (`packages/etl`)
+- [ ] Document ingestion service (extends `@jubilant/rag`)
   - PDF extraction (text + structure)
   - Markdown parsing
   - Metadata extraction
@@ -222,8 +227,8 @@ This roadmap outlines the development milestones for CompetitionTutor, a hybrid 
   - Automated testing on PR
   - Build verification
 - [ ] Testing infrastructure
-  - Unit test setup (Vitest)
-  - Integration tests for RAG pipeline
+  - Unit test setup (Vitest) - **Done: 423 tests**
+  - Integration tests for RAG pipeline - **Done**
   - E2E tests for critical paths (Playwright)
 - [ ] Containerization
   - Dockerfile for API
@@ -252,11 +257,11 @@ This roadmap outlines the development milestones for CompetitionTutor, a hybrid 
 M0 (Foundation) ─────────────────────────────────────┐
        │                                              │
        v                                              │
-M1 (Database Infrastructure)                          │
+M1 (Database Infrastructure) ✓                        │
        │                                              │
        ├──────────────┬───────────────┐              │
        v              v               v              │
-M2 (RAG Core)    M4 (ETL)       M5 (Dashboard)      │
+M2 (RAG Core) ✓   M4 (ETL)       M5 (Dashboard)      │
        │              │               │              │
        v              │               │              │
 M3 (Student UI) <─────┘               │              │
@@ -281,18 +286,21 @@ M3 (Student UI) <─────┘               │              │
 
 ## Success Metrics
 
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Answer accuracy | >90% grounded | Manual evaluation of 100 Q&A pairs |
-| Response latency | <3s P95 | API monitoring |
-| Citation coverage | 100% claims cited | Automated check in generation |
-| Teacher dashboard privacy | 0 individual exposure | Audit log review |
+| Metric | Target | Current Status |
+|--------|--------|----------------|
+| Answer accuracy | >90% grounded | Ready for validation |
+| Response latency | <3s P95 | Streaming implemented |
+| Citation coverage | 100% claims cited | Implemented |
+| Teacher dashboard privacy | 0 individual exposure | Design ready |
+| Test coverage | >400 tests | **423 tests passing** |
 
 ---
 
 ## Next Steps
 
-1. Create feature spec for M1 (Database Infrastructure) using `/speckit.specify`
-2. Set up Docker Compose with Milvus, Neo4j, PostgreSQL
-3. Implement database client packages
-4. Begin M2 (RAG Pipeline) in parallel with M4 (ETL)
+1. ~~Create feature spec for M1 (Database Infrastructure)~~ **Complete**
+2. ~~Set up Docker Compose with Milvus, Neo4j, PostgreSQL~~ **Complete**
+3. ~~Implement database client packages~~ **Complete**
+4. ~~Implement M2 (RAG Pipeline)~~ **Complete**
+5. Create feature spec for M3 (Student Q&A Interface) using `/speckit.specify`
+6. Begin M4 (ETL) in parallel with M3

@@ -5,8 +5,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "generate": "drizzle-kit generate",
-    "migrate": "drizzle-kit migrate"
+    "generate": "drizzle-kit generate:pg",
+    "migrate": "drizzle-kit push:pg"
   },
   "dependencies": {
     "@zilliz/milvus2-sdk-node": "^2.3.3",

@@ -1,7 +1,8 @@
 import type { Config } from 'drizzle-kit';
-import config from './src/config/index';
 
-const connectionString = `postgres://${config.POSTGRES_USER}:${config.POSTGRES_PASSWORD}@${config.POSTGRES_HOST}:${config.POSTGRES_PORT}/${config.POSTGRES_DB}`;
+// Use environment variables directly (with defaults for migration generation)
+const connectionString = process.env.POSTGRES_URL ||
+  `postgres://${process.env.POSTGRES_USER || 'postgres'}:${process.env.POSTGRES_PASSWORD || 'postgres'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.POSTGRES_DB || 'jubilant_db'}`;
 
 export default {
   schema: './src/schema/postgres.ts',

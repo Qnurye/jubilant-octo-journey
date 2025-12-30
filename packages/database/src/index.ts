@@ -11,10 +11,17 @@ import * as postgresSchema from './schema/postgres';
 
 // Re-export schema initialization functions
 export { initMilvusCollection, COLLECTION_NAME, VECTOR_DIM } from './schema/milvus';
-export { initGraphConstraints } from './schema/neo4j';
+export {
+  initGraphConstraints,
+  initGraphFulltextIndexes,
+  initGraphSchema,
+} from './schema/neo4j';
 export * as postgresSchema from './schema/postgres';
 export { withRetry, type RetryOptions } from './retry/index';
 export type { HealthStatus } from './health/index';
+
+// Re-export commonly used drizzle-orm operators for query building
+export { eq, and, or, not, isNull, isNotNull, gt, gte, lt, lte, ne, like, ilike, inArray, sql } from 'drizzle-orm';
 
 type PostgresDb = PostgresJsDatabase<typeof postgresSchema>;
 
@@ -154,7 +161,7 @@ export const db = new Proxy({} as DatabaseManager, {
     if (!instance) {
       instance = new DatabaseManager();
     }
-    return (instance as Record<string | symbol, unknown>)[prop];
+    return (instance as unknown as Record<string | symbol, unknown>)[prop];
   },
 });
 

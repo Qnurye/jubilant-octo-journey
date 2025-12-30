@@ -1,0 +1,28 @@
+{
+  "name": "@jubilant/rag",
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "bun build src/index.ts --outdir dist --target bun",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "llamaindex": "^0.9.0",
+    "@llamaindex/openai": "^0.1.0",
+    "@jubilant/database": "workspace:*",
+    "@zilliz/milvus2-sdk-node": "^2.4.0",
+    "neo4j-driver": "^5.17.0",
+    "zod": "^3.22.4",
+    "drizzle-orm": "^0.29.0"
+  },
+  "devDependencies": {
+    "vitest": "^1.2.1",
+    "@types/node": "^20.11.5",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
