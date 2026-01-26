@@ -182,12 +182,14 @@ The student accesses the system from a mobile device and can use all features wi
 
 | Component | Status | Tests |
 |-----------|--------|-------|
-| QueryInput | ✅ Exists | ❌ None |
-| ResponseStream | ✅ Updated | ❌ None |
-| CodeBlock | ✅ New | ❌ None |
-| MarkdownRenderer | ✅ New | ❌ None |
+| QueryInput | ✅ Exists | ✅ 26 tests |
+| ResponseStream | ✅ Updated | ✅ 14 tests |
+| CodeBlock | ✅ New | ✅ 15 tests |
+| MarkdownRenderer | ✅ New | ✅ 27 tests |
 | CitationList | ✅ Exists | ❌ None |
-| ThemeToggle | ✅ New | ❌ None |
-| ThemeProvider | ✅ New | ❌ None |
-| Sidebar | ✅ New | ❌ None |
+| ThemeToggle | ✅ New | ✅ 6 tests |
+| ThemeProvider | ✅ New | (covered by ThemeToggle) |
+| Sidebar | ✅ New | ✅ 21 tests |
 | FeedbackWidget | ✅ Exists | ❌ None |
+
+**Total: 109 tests passing**

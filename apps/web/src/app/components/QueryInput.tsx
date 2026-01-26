@@ -34,12 +34,13 @@ export function QueryInput({
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         const trimmed = query.trim();
-        if (trimmed && !isLoading) {
+        const overLimit = query.length > maxLength;
+        if (trimmed && !isLoading && !overLimit) {
           onSubmit(trimmed);
         }
       }
     },
-    [query, isLoading, onSubmit]
+    [query, isLoading, maxLength, onSubmit]
   );
 
   const charCount = query.length;
