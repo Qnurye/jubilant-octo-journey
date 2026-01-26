@@ -186,10 +186,10 @@ The student accesses the system from a mobile device and can use all features wi
 | ResponseStream | ✅ Updated | ✅ 14 tests |
 | CodeBlock | ✅ New | ✅ 15 tests |
 | MarkdownRenderer | ✅ New | ✅ 27 tests |
-| CitationList | ✅ Exists | ❌ None |
+| CitationList | ✅ Exists | ✅ 24 tests |
 | ThemeToggle | ✅ New | ✅ 6 tests |
 | ThemeProvider | ✅ New | (covered by ThemeToggle) |
 | Sidebar | ✅ New | ✅ 21 tests |
-| FeedbackWidget | ✅ Exists | ❌ None |
+| FeedbackWidget | ✅ Exists | ✅ 23 tests |
 
-**Total: 109 tests passing**
+**Total: 156 tests passing** ✅ All M3 components tested!
