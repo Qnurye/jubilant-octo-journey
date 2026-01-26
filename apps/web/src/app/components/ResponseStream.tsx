@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { CitationList, type Citation } from './CitationList';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface ConfidenceInfo {
   level: 'high' | 'medium' | 'low' | 'insufficient';
@@ -210,7 +211,7 @@ export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseS
       >
         {answer ? (
           <div className="prose dark:prose-invert max-w-none">
-            <MarkdownContent content={answer} />
+            <MarkdownRenderer content={answer} />
           </div>
         ) : (
           <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
@@ -350,46 +351,6 @@ function ConfidenceIndicator({ confidence }: { confidence: string }) {
       <span>{icon}</span>
       <span>{label}</span>
     </div>
-  );
-}
-
-function MarkdownContent({ content }: { content: string }) {
-  // Simple markdown-like rendering
-  // In production, use a proper markdown library like react-markdown
-  const paragraphs = content.split('\n\n');
-
-  return (
-    <>
-      {paragraphs.map((paragraph, i) => {
-        const trimmed = paragraph.trim();
-        if (!trimmed) return null;
-
-        // Code blocks
-        if (trimmed.startsWith('```')) {
-          const codeContent = trimmed.slice(3).replace(/```$/, '');
-          return (
-            <pre key={i} className="bg-gray-100 dark:bg-gray-900 p-3 rounded overflow-x-auto">
-              <code>{codeContent}</code>
-            </pre>
-          );
-        }
-
-        // Inline code and citations
-        const processed = trimmed
-          .replace(
-            /`([^`]+)`/g,
-            '<code class="bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sm">$1</code>',
-          )
-          .replace(
-            /\[(\d+)\]/g,
-            '<sup class="text-blue-600 dark:text-blue-400 font-medium">[$1]</sup>',
-          );
-
-        return (
-          <p key={i} className="mb-3 last:mb-0" dangerouslySetInnerHTML={{ __html: processed }} />
-        );
-      })}
-    </>
   );
 }
 
