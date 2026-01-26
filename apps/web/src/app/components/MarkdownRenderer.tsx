@@ -12,10 +12,9 @@ import 'katex/dist/katex.min.css';
 
 interface MarkdownRendererProps {
   content: string;
-  isDark?: boolean;
 }
 
-export function MarkdownRenderer({ content, isDark = true }: MarkdownRendererProps) {
+export function MarkdownRenderer({ content }: MarkdownRendererProps) {
   const components: Components = {
     // Custom code block rendering
     code({ className, children, ...props }) {
@@ -41,8 +40,7 @@ export function MarkdownRenderer({ content, isDark = true }: MarkdownRendererPro
       return (
         <CodeBlock 
           code={code} 
-          language={language} 
-          isDark={isDark}
+          language={language}
         />
       );
     },

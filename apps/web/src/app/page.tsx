@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { QueryInput } from './components/QueryInput';
 import { ResponseStream } from './components/ResponseStream';
 import { FeedbackWidget } from './components/FeedbackWidget';
+import { ThemeToggle } from './components/ThemeToggle';
 import type { Citation } from './components/CitationList';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -60,18 +61,21 @@ export default function Home() {
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <BookIcon className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <BookIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  CompetitionTutor
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  AI-powered Q&A for ACM-ICPC and Math Modeling
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                CompetitionTutor
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                AI-powered Q&A for ACM-ICPC and Math Modeling
-              </p>
-            </div>
+            <ThemeToggle />
           </div>
         </div>
       </header>

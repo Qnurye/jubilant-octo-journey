@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useTheme } from 'next-themes';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
@@ -33,15 +34,15 @@ interface CodeBlockProps {
   code: string;
   language?: string;
   showLineNumbers?: boolean;
-  isDark?: boolean;
 }
 
 export function CodeBlock({ 
   code, 
   language: initialLanguage = 'text',
   showLineNumbers = true,
-  isDark = true,
 }: CodeBlockProps) {
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === 'dark';
   const normalizedInitial = LANGUAGE_ALIASES[initialLanguage.toLowerCase()] || initialLanguage.toLowerCase();
   const [language, setLanguage] = useState(normalizedInitial);
   const [copied, setCopied] = useState(false);
