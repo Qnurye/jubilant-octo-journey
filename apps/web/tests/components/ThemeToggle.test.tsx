@@ -81,11 +81,11 @@ describe('ThemeToggle', () => {
       expect(button).toHaveAttribute('aria-label');
     });
 
-    it('should have title attribute', () => {
+    it('should have aria-label with theme info', () => {
       render(<ThemeToggle />);
       
       const button = screen.getByRole('button');
-      expect(button).toHaveAttribute('title');
+      expect(button.getAttribute('aria-label')).toContain('theme');
     });
   });
 });

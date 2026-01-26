@@ -64,9 +64,11 @@ describe('ResponseStream', () => {
         })
       );
 
-      render(<ResponseStream {...defaultProps} />);
+      const { container } = render(<ResponseStream {...defaultProps} />);
 
-      expect(screen.getByText('Generating response...')).toBeInTheDocument();
+      // Check for skeleton loading state
+      const skeletons = container.querySelectorAll('[data-slot="skeleton"]');
+      expect(skeletons.length).toBeGreaterThan(0);
     });
 
     it('should display streamed tokens', async () => {

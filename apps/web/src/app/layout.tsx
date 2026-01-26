@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import 'katex/dist/katex.min.css';
 import { ThemeProvider } from './components/ThemeProvider';
+import { Toaster } from '@/components/ui/sonner';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -16,7 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'CompetitionTutor - AI-powered Q&A for ACM & Math Modeling',
-  description: 'Hybrid RAG intelligent Q&A system for academic competition preparation with anti-hallucination guarantees.',
+  description:
+    'Hybrid RAG intelligent Q&A system for academic competition preparation with anti-hallucination guarantees.',
 };
 
 export default function RootLayout({
@@ -27,7 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <Toaster richColors closeButton position="top-right" />
+        </ThemeProvider>
       </body>
     </html>
   );
