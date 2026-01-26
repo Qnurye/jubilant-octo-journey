@@ -1,14 +1,14 @@
 'use client';
 
 import { ThemeProvider as NextThemesProvider } from 'next-themes';
-import type { ReactNode } from 'react';
 
-interface ThemeProviderProps {
-  children: ReactNode;
-}
-
-export function ThemeProvider({ children }: ThemeProviderProps) {
+export function ThemeProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}): React.JSX.Element {
   return (
+    // @ts-expect-error - next-themes types are incorrect for children prop
     <NextThemesProvider
       attribute="class"
       defaultTheme="system"

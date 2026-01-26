@@ -1,6 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronDown, ChevronUp, ExternalLink, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export interface Citation {
   id: string;
@@ -29,34 +43,64 @@ export function CitationList({ citations, maxVisible = 5 }: CitationListProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-          Sources ({citations.length})
-        </h3>
-        {hasMore && (
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            {expanded ? 'Show less' : `Show all ${citations.length}`}
-          </button>
-        )}
-      </div>
+      <Collapsible open={expanded} onOpenChange={setExpanded}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-muted-foreground">
+            Sources ({citations.length})
+          </h3>
+          {hasMore && (
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-auto p-1 text-xs gap-1">
+                {expanded ? (
+                  <>
+                    <ChevronUp className="size-3" />
+                    Show less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="size-3" />
+                    Show all {citations.length}
+                  </>
+                )}
+              </Button>
+            </CollapsibleTrigger>
+          )}
+        </div>
 
-      <div className="grid gap-2">
-        {visibleCitations.map((citation) => (
-          <CitationCard
-            key={citation.id}
-            citation={citation}
-            isSelected={selectedCitation?.id === citation.id}
-            onClick={() =>
-              setSelectedCitation(
-                selectedCitation?.id === citation.id ? null : citation
-              )
-            }
-          />
-        ))}
-      </div>
+        <div className="grid gap-2 mt-2">
+          {citations.slice(0, maxVisible).map((citation) => (
+            <CitationCard
+              key={citation.id}
+              citation={citation}
+              isSelected={selectedCitation?.id === citation.id}
+              onClick={() =>
+                setSelectedCitation(
+                  selectedCitation?.id === citation.id ? null : citation
+                )
+              }
+            />
+          ))}
+        </div>
+
+        {hasMore && (
+          <CollapsibleContent>
+            <div className="grid gap-2 mt-2">
+              {citations.slice(maxVisible).map((citation) => (
+                <CitationCard
+                  key={citation.id}
+                  citation={citation}
+                  isSelected={selectedCitation?.id === citation.id}
+                  onClick={() =>
+                    setSelectedCitation(
+                      selectedCitation?.id === citation.id ? null : citation
+                    )
+                  }
+                />
+              ))}
+            </div>
+          </CollapsibleContent>
+        )}
+      </Collapsible>
 
       {selectedCitation && (
         <CitationDetail
@@ -76,43 +120,54 @@ interface CitationCardProps {
 
 function CitationCard({ citation, isSelected, onClick }: CitationCardProps) {
   const relevancePercent = Math.round(citation.relevanceScore * 100);
-  const relevanceColor =
+  const relevanceVariant =
     relevancePercent >= 80
-      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+      ? 'default'
       : relevancePercent >= 60
-        ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+        ? 'secondary'
+        : 'outline';
 
   return (
-    <button
+    <Card
+      className={`cursor-pointer transition-all ${
+        isSelected ? 'ring-2 ring-primary' : 'hover:bg-accent'
+      }`}
       onClick={onClick}
-      className={`
-        w-full text-left p-3 rounded-lg border transition-all
-        ${
-          isSelected
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
-        }
-      `}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
-            {citation.id}
-          </span>
-          <span className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
-            {citation.documentTitle}
-          </span>
+      <CardContent className="p-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="font-mono text-sm font-bold text-primary cursor-help">
+                  [{citation.id}]
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Chunk ID: {citation.chunkId}</p>
+              </TooltipContent>
+            </Tooltip>
+            <span className="font-medium text-sm truncate">
+              {citation.documentTitle}
+            </span>
+          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Badge variant={relevanceVariant} className="cursor-help">
+                {relevancePercent}%
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Relevance score</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
-        <span className={`text-xs px-1.5 py-0.5 rounded ${relevanceColor}`}>
-          {relevancePercent}%
-        </span>
-      </div>
 
-      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-        {citation.snippet}
-      </p>
-    </button>
+        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+          {citation.snippet}
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -123,62 +178,71 @@ interface CitationDetailProps {
 
 function CitationDetail({ citation, onClose }: CitationDetailProps) {
   return (
-    <div className="mt-2 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-lg font-bold text-blue-600 dark:text-blue-400">
-              {citation.id}
-            </span>
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+    <Card className="mt-2">
+      <CardHeader className="pb-2">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className="font-mono text-lg font-bold text-primary">
+                [{citation.id}]
+              </span>
               {citation.documentTitle}
-            </h4>
+            </CardTitle>
+            {citation.documentUrl && (
+              <a
+                href={citation.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <ExternalLink className="size-3" />
+                {citation.documentUrl}
+              </a>
+            )}
           </div>
-          {citation.documentUrl && (
-            <a
-              href={citation.documentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              {citation.documentUrl}
-            </a>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="size-8"
+              >
+                <X className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Close details</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-        >
-          <CloseIcon />
-        </button>
-      </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div>
+          <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+            Excerpt
+          </h5>
+          <blockquote className="pl-3 border-l-2 border-primary text-sm text-muted-foreground italic">
+            {citation.snippet}
+          </blockquote>
+        </div>
 
-      <div className="mt-3">
-        <h5 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
-          Excerpt
-        </h5>
-        <blockquote className="pl-3 border-l-2 border-blue-500 text-sm text-gray-700 dark:text-gray-300 italic">
-          {citation.snippet}
-        </blockquote>
-      </div>
-
-      <div className="mt-3 flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-        <span>
-          Relevance: <strong>{Math.round(citation.relevanceScore * 100)}%</strong>
-        </span>
-        <span>
-          Chunk ID: <code className="bg-gray-200 dark:bg-gray-800 px-1 rounded">{citation.chunkId}</code>
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span>
+            Relevance:{' '}
+            <strong className="text-foreground">
+              {Math.round(citation.relevanceScore * 100)}%
+            </strong>
+          </span>
+          <span>
+            Chunk ID:{' '}
+            <code className="bg-muted px-1.5 py-0.5 rounded text-[10px]">
+              {citation.chunkId}
+            </code>
+          </span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

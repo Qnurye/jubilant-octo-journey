@@ -53,11 +53,12 @@ describe('QueryInput', () => {
     });
 
     it('should show keyboard hint', () => {
-      render(<QueryInput {...defaultProps} />);
+      const { container } = render(<QueryInput {...defaultProps} />);
 
-      expect(
-        screen.getByText(/Press Enter to submit, Shift\+Enter for new line/i)
-      ).toBeInTheDocument();
+      // Text is split by <kbd> elements
+      const hint = container.querySelector('p');
+      expect(hint?.textContent).toContain('Enter');
+      expect(hint?.textContent).toContain('submit');
     });
   });
 
@@ -211,7 +212,7 @@ describe('QueryInput', () => {
       await user.type(textarea, '123456'); // 6 chars, over limit
 
       const counter = screen.getByText('6/5');
-      expect(counter).toHaveClass('text-red-500');
+      expect(counter).toHaveClass('text-destructive');
     });
 
     it('should show error message when exceeding limit', async () => {

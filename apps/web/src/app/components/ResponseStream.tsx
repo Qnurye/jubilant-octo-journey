@@ -1,8 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { AlertCircle, AlertTriangle, CheckCircle, Circle, Info } from 'lucide-react';
+import { toast } from 'sonner';
 import { CitationList, type Citation } from './CitationList';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ConfidenceInfo {
   level: 'high' | 'medium' | 'low' | 'insufficient';
@@ -56,9 +66,7 @@ export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseS
       try {
         const response = await fetch(`${apiUrl}/api/query/stream`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query,
             topK: 5,
@@ -74,9 +82,7 @@ export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseS
         }
 
         const reader = response.body?.getReader();
-        if (!reader) {
-          throw new Error('No response body');
-        }
+        if (!reader) throw new Error('No response body');
 
         const decoder = new TextDecoder();
         let buffer = '';
@@ -86,12 +92,9 @@ export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseS
 
         while (true) {
           const { done, value } = await reader.read();
-
           if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
-
-          // Parse SSE events
           const events = buffer.split('\n\n');
           buffer = events.pop() || '';
 
@@ -114,32 +117,26 @@ export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseS
 
               switch (chunk.type) {
                 case 'confidence':
-                  if (chunk.confidence) {
-                    setConfidenceInfo(chunk.confidence);
-                  }
+                  if (chunk.confidence) setConfidenceInfo(chunk.confidence);
                   break;
-
                 case 'token':
                   if (chunk.content) {
                     fullAnswer += chunk.content;
                     setAnswer(fullAnswer);
                   }
                   break;
-
                 case 'citation':
                   if (chunk.citation) {
                     collectedCitations.push(chunk.citation);
                     setCitations([...collectedCitations]);
                   }
                   break;
-
                 case 'metadata':
                   if (chunk.metadata) {
                     responseMetadata = chunk.metadata;
                     setMetadata(chunk.metadata);
                   }
                   break;
-
                 case 'done':
                   setIsStreaming(false);
                   onComplete?.({
@@ -148,10 +145,10 @@ export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseS
                     metadata: responseMetadata,
                   });
                   break;
-
                 case 'error':
                   setError(chunk.error || 'Unknown error');
                   setIsStreaming(false);
+                  toast.error(chunk.error || 'Unknown error');
                   onError?.(chunk.error || 'Unknown error');
                   break;
               }
@@ -161,24 +158,19 @@ export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseS
           }
         }
       } catch (err) {
-        if (err instanceof Error && err.name === 'AbortError') {
-          return;
-        }
+        if (err instanceof Error && err.name === 'AbortError') return;
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
         setError(errorMessage);
         setIsStreaming(false);
+        toast.error(errorMessage);
         onError?.(errorMessage);
       }
     }
 
     streamResponse();
-
-    return () => {
-      abortController.abort();
-    };
+    return () => abortController.abort();
   }, [query, apiUrl, onComplete, onError]);
 
-  // Auto-scroll to bottom as content streams
   useEffect(() => {
     if (contentRef.current) {
       contentRef.current.scrollTop = contentRef.current.scrollHeight;
@@ -187,58 +179,63 @@ export function ResponseStream({ query, apiUrl, onComplete, onError }: ResponseS
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-          <ErrorIcon />
-          <span className="font-medium">Error</span>
-        </div>
-        <p className="mt-2 text-red-600 dark:text-red-400">{error}</p>
-      </div>
+      <Card className="border-destructive bg-destructive/10">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertCircle className="size-5" />
+            <span className="font-medium">Error</span>
+          </div>
+          <p className="mt-2 text-sm text-destructive">{error}</p>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Uncertainty acknowledgment banner - shown early when evidence is insufficient */}
       {confidenceInfo?.hasInsufficientEvidence && (
         <UncertaintyBanner confidenceLevel={confidenceInfo.level} />
       )}
 
-      {/* Answer section */}
-      <div
-        ref={contentRef}
-        className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg max-h-96 overflow-y-auto"
-      >
-        {answer ? (
-          <div className="prose dark:prose-invert max-w-none">
-            <MarkdownRenderer content={answer} />
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-            <LoadingDots />
-            <span>Generating response...</span>
-          </div>
-        )}
+      <Card>
+        <CardContent ref={contentRef} className="p-4 max-h-96 overflow-y-auto">
+          {answer ? (
+            <div className="prose dark:prose-invert max-w-none">
+              <MarkdownRenderer content={answer} />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-5/6" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
+          )}
 
-        {isStreaming && answer && (
-          <span className="inline-block w-2 h-4 bg-blue-500 animate-pulse ml-1" />
-        )}
-      </div>
+          {isStreaming && answer && (
+            <span className="inline-block w-2 h-5 bg-primary animate-pulse ml-0.5 align-text-bottom" />
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Confidence indicator */}
       {(metadata || confidenceInfo) && (
         <ConfidenceIndicator
           confidence={metadata?.confidence || confidenceInfo?.level || 'medium'}
         />
       )}
 
-      {/* Citations */}
       {citations.length > 0 && <CitationList citations={citations} />}
 
-      {/* Metadata footer */}
       {metadata && !isStreaming && (
-        <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-4">
-          <span>Latency: {metadata.latencyMs}ms</span>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="cursor-help">Latency: {metadata.latencyMs}ms</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Total response time</p>
+            </TooltipContent>
+          </Tooltip>
           <span>Vector results: {metadata.vectorResultCount}</span>
           <span>Graph results: {metadata.graphResultCount}</span>
           <span>Citations: {metadata.citationCount}</span>
@@ -252,137 +249,70 @@ function UncertaintyBanner({ confidenceLevel }: { confidenceLevel: string }) {
   const isInsufficient = confidenceLevel === 'insufficient';
 
   return (
-    <div
-      className={`p-4 rounded-lg border ${
+    <Card
+      className={
         isInsufficient
-          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-          : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-      }`}
+          ? 'border-orange-300 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20'
+          : 'border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20'
+      }
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-            isInsufficient ? 'bg-amber-100 dark:bg-amber-800' : 'bg-yellow-100 dark:bg-yellow-800'
-          }`}
-        >
-          <WarningIcon
-            className={
-              isInsufficient
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-yellow-600 dark:text-yellow-400'
-            }
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <AlertTriangle
+            className={`size-5 shrink-0 ${
+              isInsufficient ? 'text-orange-600 dark:text-orange-400' : 'text-yellow-600 dark:text-yellow-400'
+            }`}
           />
+          <div>
+            <h4
+              className={`font-medium ${
+                isInsufficient
+                  ? 'text-orange-800 dark:text-orange-300'
+                  : 'text-yellow-800 dark:text-yellow-300'
+              }`}
+            >
+              {isInsufficient ? 'Limited Information Available' : 'Lower Confidence Response'}
+            </h4>
+            <p
+              className={`mt-1 text-sm ${
+                isInsufficient
+                  ? 'text-orange-700 dark:text-orange-400'
+                  : 'text-yellow-700 dark:text-yellow-400'
+              }`}
+            >
+              {isInsufficient
+                ? 'Our knowledge base has limited information on this topic. Please verify with additional sources.'
+                : 'The retrieved evidence has moderate relevance. Some parts may be based on partial information.'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h4
-            className={`font-medium ${
-              isInsufficient
-                ? 'text-amber-800 dark:text-amber-300'
-                : 'text-yellow-800 dark:text-yellow-300'
-            }`}
-          >
-            {isInsufficient ? 'Limited Information Available' : 'Lower Confidence Response'}
-          </h4>
-          <p
-            className={`mt-1 text-sm ${
-              isInsufficient
-                ? 'text-amber-700 dark:text-amber-400'
-                : 'text-yellow-700 dark:text-yellow-400'
-            }`}
-          >
-            {isInsufficient
-              ? 'Our knowledge base has limited information on this specific topic. The response below may not fully address your question, and we recommend verifying with additional sources.'
-              : 'The retrieved evidence has moderate relevance to your question. Some parts of the response may be based on partial information.'}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function WarningIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={`w-4 h-4 ${className || ''}`}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-      />
-    </svg>
+      </CardContent>
+    </Card>
   );
 }
 
 function ConfidenceIndicator({ confidence }: { confidence: string }) {
   const config = {
-    high: {
-      label: 'High Confidence',
-      color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-      icon: '✓',
-    },
-    medium: {
-      label: 'Medium Confidence',
-      color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-      icon: '○',
-    },
-    low: {
-      label: 'Low Confidence',
-      color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-      icon: '△',
-    },
-    insufficient: {
-      label: 'Limited Evidence',
-      color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-      icon: '!',
-    },
+    high: { label: 'High Confidence', variant: 'default' as const, icon: CheckCircle },
+    medium: { label: 'Medium Confidence', variant: 'secondary' as const, icon: Circle },
+    low: { label: 'Low Confidence', variant: 'outline' as const, icon: Info },
+    insufficient: { label: 'Limited Evidence', variant: 'destructive' as const, icon: AlertCircle },
   };
 
-  const { label, color, icon } = config[confidence as keyof typeof config] || config.medium;
+  const { label, variant, icon: Icon } = config[confidence as keyof typeof config] || config.medium;
 
   return (
-    <div
-      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${color}`}
-    >
-      <span>{icon}</span>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function LoadingDots() {
-  return (
-    <span className="flex gap-1">
-      <span
-        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-        style={{ animationDelay: '0ms' }}
-      />
-      <span
-        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-        style={{ animationDelay: '150ms' }}
-      />
-      <span
-        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-        style={{ animationDelay: '300ms' }}
-      />
-    </span>
-  );
-}
-
-function ErrorIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-      />
-    </svg>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Badge variant={variant} className="gap-1 cursor-help">
+          <Icon className="size-3" />
+          {label}
+        </Badge>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>Confidence level based on retrieved evidence quality</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
