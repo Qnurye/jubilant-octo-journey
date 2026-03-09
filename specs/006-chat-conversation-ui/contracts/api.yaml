@@ -1,0 +1,77 @@
+# API Contract Changes for Chat Conversation UI
+# Only documents CHANGES to existing endpoints
+
+# =============================================================================
+# Modified: POST /api/query/stream
+# =============================================================================
+# New request fields (backward compatible — all optional):
+#
+# Request body additions:
+#   conversationId:
+#     type: string
+#     format: uuid
+#     description: Links this query to a conversation. If provided, a conversations
+#                  record is created/updated server-side.
+#     required: false
+#
+#   history:
+#     type: array
+#     items:
+#       type: object
+#       properties:
+#         role:
+#           type: string
+#           enum: [user, assistant]
+#         content:
+#           type: string
+#           maxLength: 4000
+#     description: Previous conversation turns for LLM context injection.
+#                  Truncated server-side if exceeding token budget.
+#     required: false
+#     maxItems: 20
+#
+# Response (SSE stream): NO CHANGES
+#   - Existing chunk types (token, citation, metadata, done, error, confidence) unchanged
+#   - metadata.queryId still uniquely identifies each query's retrieval record
+#
+# Backward compatibility:
+#   - Requests without conversationId/history work exactly as before
+#   - conversationId=null queries are standalone (no conversation grouping)
+
+# =============================================================================
+# Modified: POST /api/query (non-streaming)
+# =============================================================================
+# Same request body additions as /api/query/stream above.
+
+# =============================================================================
+# New: POST /api/conversations
+# =============================================================================
+# Creates a conversation record server-side.
+# Called by frontend when starting a new conversation.
+#
+# Request:
+#   title:
+#     type: string
+#     maxLength: 100
+#     description: First message text (truncated)
+#
+# Response:
+#   id:
+#     type: string
+#     format: uuid
+#   title:
+#     type: string
+#   createdAt:
+#     type: string
+#     format: date-time
+#
+# Status codes:
+#   201: Created
+#   400: Invalid input
+#   429: Rate limited
+
+# =============================================================================
+# Modified: POST /api/feedback
+# =============================================================================
+# No changes needed — already accepts queryId which is per-message.
+# Each follow-up has its own queryId, so feedback is naturally per-message.

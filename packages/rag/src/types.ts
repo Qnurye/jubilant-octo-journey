@@ -144,6 +144,18 @@ export interface ResponseMetadata {
 }
 
 // ============================================================================
+// Conversation Types
+// ============================================================================
+
+/**
+ * A single turn in a conversation history
+ */
+export interface ConversationTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+// ============================================================================
 // API Request/Response Types
 // ============================================================================
 
@@ -156,6 +168,10 @@ export interface QueryRequest {
   topK?: number;
   includeGraph?: boolean;
   topicFilter?: string;
+  /** Conversation history for multi-turn context */
+  history?: ConversationTurn[];
+  /** Conversation ID for linking follow-up queries */
+  conversationId?: string;
 }
 
 /**

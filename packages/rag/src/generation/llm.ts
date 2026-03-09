@@ -347,34 +347,86 @@ export class Qwen3LLM {
    */
   async *stream(messages: ChatMessage[]): AsyncGenerator<LLMStreamChunk> {
     try {
-      const stream = await this.client.chat({
-        messages: messages.map(m => ({
-          role: m.role,
-          content: m.content,
-        })),
-        stream: true,
+      // Use raw fetch for streaming to handle Ollama's reasoning field
+      // (Ollama puts Qwen3 thinking content in delta.reasoning instead of delta.content)
+      const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(this.config.apiKey && { Authorization: `Bearer ${this.config.apiKey}` }),
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          messages: messages.map(m => ({ role: m.role, content: m.content })),
+          stream: true,
+          temperature: this.config.temperature,
+          max_tokens: this.config.maxTokens,
+        }),
       });
 
-      for await (const chunk of stream) {
-        const content = chunk.delta;
-        if (content) {
-          yield {
-            content,
-            finishReason: null,
-          };
+      if (!response.ok) {
+        throw new Error(`LLM API error: ${response.status} ${await response.text()}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('Response body is not readable');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let inThinking = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
+
+          try {
+            const data = JSON.parse(line.slice(6));
+            const delta = data.choices?.[0]?.delta;
+            const finishReason = data.choices?.[0]?.finish_reason;
+
+            if (finishReason === 'stop') {
+              yield { content: '', finishReason: 'stop' };
+              return;
+            }
+
+            // Read content, falling back to reasoning (Ollama/Qwen3 thinking mode)
+            let content = delta?.content || '';
+
+            // If content contains <think> tags, filter them out
+            if (content.includes('<think>')) inThinking = true;
+            if (inThinking) {
+              if (content.includes('</think>')) {
+                content = content.split('</think>').pop() || '';
+                inThinking = false;
+              } else {
+                continue; // Skip thinking content
+              }
+            }
+
+            // Fall back to reasoning field if content is empty (Ollama Qwen3)
+            if (!content && delta?.reasoning) continue; // Skip reasoning-only chunks
+
+            if (content) {
+              yield { content, finishReason: null };
+            }
+          } catch {
+            // Skip malformed JSON lines
+          }
         }
       }
 
-      yield {
-        content: '',
-        finishReason: 'stop',
-      };
+      yield { content: '', finishReason: 'stop' };
     } catch (error) {
-      // For streaming, we yield an error indicator
       const llmError = this.wrapError(error);
       console.error(`LLM stream error [${llmError.errorType}]:`, llmError.message);
 
-      // Yield error information in the stream
       yield {
         content: '',
         finishReason: 'stop',

@@ -7,7 +7,7 @@
  * @module @jubilant/rag/generation/prompts
  */
 
-import type { RankedResult, Citation } from '../types';
+import type { RankedResult, Citation, ConversationTurn } from '../types';
 
 /**
  * Confidence level based on reranker scores
@@ -202,6 +202,45 @@ Format: Return only the questions, one per line, without numbering.`;
 }
 
 /**
+ * Truncate conversation history to fit within a token budget.
+ * Keeps the most recent turns, dropping oldest first.
+ *
+ * @param history - Full conversation history
+ * @param maxTokens - Token budget (default 2048)
+ * @returns Truncated history fitting within the budget
+ */
+export function truncateHistory(
+  history: ConversationTurn[],
+  maxTokens: number = 2048
+): ConversationTurn[] {
+  if (history.length === 0) return [];
+
+  // Estimate tokens: content.length / 3 (rough CJK estimate)
+  const estimateTokens = (turn: ConversationTurn) =>
+    Math.ceil(turn.content.length / 3);
+
+  // Walk from most recent to oldest, accumulating tokens
+  let totalTokens = 0;
+  let startIndex = history.length;
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    const turnTokens = estimateTokens(history[i]);
+    if (totalTokens + turnTokens > maxTokens) break;
+    totalTokens += turnTokens;
+    startIndex = i;
+  }
+
+  const truncated = history.slice(startIndex);
+  if (truncated.length < history.length) {
+    console.warn(
+      `[RAG] Conversation history truncated: ${history.length} → ${truncated.length} turns (${totalTokens}/${maxTokens} tokens)`
+    );
+  }
+
+  return truncated;
+}
+
+/**
  * Build the complete messages array for chat completion
  */
 export function buildChatMessages(
@@ -209,8 +248,9 @@ export function buildChatMessages(
   results: RankedResult[],
   citations: Citation[],
   hasInsufficient: boolean,
-  confidenceLevel: ConfidenceLevel
-): Array<{ role: 'system' | 'user'; content: string }> {
+  confidenceLevel: ConfidenceLevel,
+  history?: ConversationTurn[]
+): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
   const context = formatContext(results, citations);
 
   let userPrompt: string;
@@ -238,8 +278,19 @@ export function buildChatMessages(
     userPrompt = createQueryPrompt(query, context);
   }
 
-  return [
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { role: 'system' as const, content: GROUNDED_RESPONSE_SYSTEM_PROMPT },
-    { role: 'user' as const, content: userPrompt },
   ];
+
+  // Insert truncated conversation history between system and user messages
+  if (history && history.length > 0) {
+    const truncated = truncateHistory(history);
+    for (const turn of truncated) {
+      messages.push({ role: turn.role, content: turn.content });
+    }
+  }
+
+  messages.push({ role: 'user' as const, content: userPrompt });
+
+  return messages;
 }

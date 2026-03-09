@@ -7,6 +7,8 @@
     "test:watch": "vitest",
     "generate": "drizzle-kit generate:pg",
     "migrate": "drizzle-kit push:pg",
+    "db:migrate": "bun --env-file=../../.env scripts/migrate.ts",
+    "db:seed": "bun --env-file=../../.env scripts/seed.ts",
     "infra-overview": "bun --env-file=../../.env scripts/infra-scaffold.ts"
   },
   "dependencies": {

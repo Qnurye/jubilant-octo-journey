@@ -309,13 +309,14 @@ export class RAGPipeline {
     // Step 4: Create citations
     const citations = createCitations(rankedResults);
 
-    // Step 5: Build chat messages
+    // Step 5: Build chat messages (with optional conversation history)
     const messages = buildChatMessages(
       query,
       rankedResults,
       citations,
       insufficientEvidence,
-      confidenceLevel
+      confidenceLevel,
+      request.history
     );
 
     // Record final context metrics

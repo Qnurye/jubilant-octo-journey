@@ -10,6 +10,8 @@
     "dev": "bun --env-file=.env run --filter '*' dev",
     "build": "bun --env-file=.env run --filter '*' build",
     "lint": "bun run --filter '*' lint",
+    "db:migrate": "bun run --filter '@jubilant/database' db:migrate",
+    "db:seed": "bun run --filter '@jubilant/database' db:seed",
     "service-check": "bun --elide-lines=0 run --filter '@jubilant/database' infra-overview",
     "type-check": "bun run --filter '*' type-check",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules .next dist build out coverage",

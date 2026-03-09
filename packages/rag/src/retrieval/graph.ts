@@ -28,14 +28,16 @@ export interface Neo4jGraphRetrieverConfig {
  * Default configuration
  */
 const DEFAULT_CONFIG: Neo4jGraphRetrieverConfig = {
-  maxDepth: 2,
+  maxDepth: parseInt(process.env.RAG_GRAPH_MAX_HOPS || '4', 10),
   topK: 10,
   relationshipTypes: [
     'PREREQUISITE',
     'RELATED_TO',
     'COMPARED_TO',
     'PART_OF',
-    'DISCUSSES',
+    'USES',
+    'IMPLEMENTS',
+    'EXAMPLE_OF',
   ],
   useFulltextSearch: true,
 };

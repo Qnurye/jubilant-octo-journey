@@ -1,20 +1,25 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, BookOpen, HelpCircle, Menu } from 'lucide-react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { BookOpen, HelpCircle } from 'lucide-react';
 import { QueryInput } from './components/QueryInput';
-import { ResponseStream } from './components/ResponseStream';
-import { FeedbackWidget } from './components/FeedbackWidget';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Sidebar } from './components/Sidebar';
+import { ConversationView } from './components/ConversationView';
 import type { Citation } from './components/CitationList';
+import type { Conversation, ConversationMessage } from '@/lib/types';
+import {
+  saveConversation,
+  loadConversation,
+  listConversations,
+  deleteConversation,
+} from '@/lib/conversations';
 import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
   Empty,
@@ -27,90 +32,305 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
-interface CompletedResponse {
-  id: string;
-  query: string;
-  answer: string;
-  citations: Citation[];
-  metadata: {
-    queryId: string;
-    confidence: 'high' | 'medium' | 'low' | 'insufficient';
-    latencyMs: number;
-  } | null;
-  timestamp: Date;
-  feedbackSubmitted?: boolean;
+function generateId(): string {
+  return crypto.randomUUID();
 }
 
 export default function Home() {
-  const [currentQuery, setCurrentQuery] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [history, setHistory] = useState<CompletedResponse[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState<string>('');
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Convert history to sidebar conversation format
-  const conversations = useMemo(() => {
-    return history.map((item) => ({
-      id: item.id,
-      title: item.query.slice(0, 50) + (item.query.length > 50 ? '...' : ''),
-      preview: item.answer.slice(0, 100) + '...',
-      timestamp: item.timestamp,
-      messageCount: 2, // Q + A
-    }));
-  }, [history]);
-
-  const handleSubmit = useCallback((query: string) => {
-    setCurrentQuery(query);
-    setIsLoading(true);
-    setSelectedConversationId(null);
+  // Restore conversations from localStorage on mount
+  useEffect(() => {
+    const index = listConversations();
+    const loaded: Conversation[] = [];
+    for (const entry of index) {
+      const conv = loadConversation(entry.id);
+      if (conv) loaded.push(conv);
+    }
+    setConversations(loaded);
+    // Optionally set most recent as active
+    if (loaded.length > 0) {
+      setActiveConversationId(loaded[0].id);
+    }
   }, []);
 
-  const handleComplete = useCallback(
-    (response: { answer: string; citations: Citation[]; metadata: CompletedResponse['metadata'] }) => {
-      if (currentQuery) {
-        const newId = response.metadata?.queryId || `conv-${Date.now()}`;
-        setHistory((prev) => [
-          {
-            id: newId,
-            query: currentQuery,
-            answer: response.answer,
-            citations: response.citations,
-            metadata: response.metadata,
-            timestamp: new Date(),
-          },
-          ...prev,
-        ]);
-        setSelectedConversationId(newId);
-      }
-      setCurrentQuery(null);
-      setIsLoading(false);
+  const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
+
+  // Persist conversation to localStorage
+  const persistConversation = useCallback((conv: Conversation) => {
+    saveConversation(conv);
+  }, []);
+
+  // Update a conversation in state and persist
+  const updateConversation = useCallback(
+    (id: string, updater: (conv: Conversation) => Conversation) => {
+      setConversations((prev) => {
+        const updated = prev.map((c) => {
+          if (c.id !== id) return c;
+          const newConv = updater(c);
+          persistConversation(newConv);
+          return newConv;
+        });
+        return updated;
+      });
     },
-    [currentQuery]
+    [persistConversation]
   );
 
-  const handleError = useCallback(() => {
-    setCurrentQuery(null);
-    setIsLoading(false);
-  }, []);
+  // Stream a response from the API
+  const streamResponse = useCallback(
+    async (conversationId: string, query: string, history: { role: string; content: string }[]) => {
+      setIsStreaming(true);
+      setStreamingContent('');
 
-  const handleSelectConversation = useCallback((id: string) => {
-    setSelectedConversationId(id);
-  }, []);
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      try {
+        const response = await fetch(`${API_URL}/api/query/stream`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            conversationId,
+            history,
+            topK: 5,
+            includeGraph: true,
+            stream: true,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to get response');
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullAnswer = '';
+        const collectedCitations: Citation[] = [];
+        let responseMetadata: ConversationMessage['metadata'] | undefined;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split('\n\n');
+          buffer = events.pop() || '';
+
+          for (const eventStr of events) {
+            if (!eventStr.trim()) continue;
+
+            const lines = eventStr.split('\n');
+            let data: string | null = null;
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                data = line.slice(6);
+              }
+            }
+
+            if (!data) continue;
+
+            try {
+              const chunk = JSON.parse(data);
+
+              switch (chunk.type) {
+                case 'token':
+                  if (chunk.content) {
+                    fullAnswer += chunk.content;
+                    setStreamingContent(fullAnswer);
+                  }
+                  break;
+                case 'citation':
+                  if (chunk.citation) {
+                    collectedCitations.push(chunk.citation);
+                  }
+                  break;
+                case 'metadata':
+                  if (chunk.metadata) {
+                    responseMetadata = {
+                      queryId: chunk.metadata.queryId,
+                      confidence: chunk.metadata.confidence,
+                      latencyMs: chunk.metadata.latencyMs,
+                      vectorResultCount: chunk.metadata.vectorResultCount,
+                      graphResultCount: chunk.metadata.graphResultCount,
+                    };
+                  }
+                  break;
+                case 'done': {
+                  // Create assistant message and add to conversation
+                  const assistantMessage: ConversationMessage = {
+                    id: generateId(),
+                    role: 'assistant',
+                    content: fullAnswer,
+                    timestamp: new Date().toISOString(),
+                    citations: collectedCitations.length > 0 ? collectedCitations : undefined,
+                    metadata: responseMetadata,
+                  };
+
+                  updateConversation(conversationId, (conv) => ({
+                    ...conv,
+                    messages: [...conv.messages, assistantMessage],
+                    updatedAt: new Date().toISOString(),
+                  }));
+
+                  setIsStreaming(false);
+                  setStreamingContent('');
+                  break;
+                }
+                case 'error':
+                  setIsStreaming(false);
+                  setStreamingContent('');
+                  break;
+              }
+            } catch {
+              // parse error, skip
+            }
+          }
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return;
+        setIsStreaming(false);
+        setStreamingContent('');
+      }
+    },
+    [updateConversation]
+  );
+
+  // Handle submitting a question (new conversation or follow-up)
+  const handleSubmit = useCallback(
+    (query: string) => {
+      const now = new Date().toISOString();
+      const userMessage: ConversationMessage = {
+        id: generateId(),
+        role: 'user',
+        content: query,
+        timestamp: now,
+      };
+
+      if (activeConversationId && activeConversation) {
+        // Follow-up: append to existing conversation
+        const history = activeConversation.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
+
+        updateConversation(activeConversationId, (conv) => ({
+          ...conv,
+          messages: [...conv.messages, userMessage],
+          updatedAt: now,
+        }));
+
+        streamResponse(activeConversationId, query, history);
+      } else {
+        // New conversation
+        const convId = generateId();
+        const title = query.slice(0, 50) + (query.length > 50 ? '...' : '');
+        const newConv: Conversation = {
+          id: convId,
+          title,
+          messages: [userMessage],
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        setConversations((prev) => [newConv, ...prev]);
+        setActiveConversationId(convId);
+        persistConversation(newConv);
+
+        // Create conversation record server-side, then start streaming
+        fetch(`${API_URL}/api/conversations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: convId, title }),
+        })
+          .then(() => streamResponse(convId, query, []))
+          .catch(() => {
+            // If conversation creation fails, stream anyway (metrics logging will skip FK)
+            streamResponse(convId, query, []);
+          });
+      }
+    },
+    [activeConversationId, activeConversation, updateConversation, streamResponse, persistConversation]
+  );
+
+  const handleSelectConversation = useCallback(
+    (id: string) => {
+      // If not in memory, try to load from localStorage
+      const inMemory = conversations.find((c) => c.id === id);
+      if (!inMemory) {
+        const fromStorage = loadConversation(id);
+        if (fromStorage) {
+          setConversations((prev) => [fromStorage, ...prev]);
+        }
+      }
+      setActiveConversationId(id);
+    },
+    [conversations]
+  );
 
   const handleNewChat = useCallback(() => {
-    setSelectedConversationId(null);
+    setActiveConversationId(null);
+    // Abort any ongoing stream
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsStreaming(false);
+    setStreamingContent('');
   }, []);
 
-  const selectedConversation = selectedConversationId
-    ? history.find((h) => h.id === selectedConversationId)
-    : null;
+  const handleDeleteConversation = useCallback(
+    (id: string) => {
+      deleteConversation(id);
+      setConversations((prev) => prev.filter((c) => c.id !== id));
+      if (activeConversationId === id) {
+        setActiveConversationId(null);
+      }
+    },
+    [activeConversationId]
+  );
+
+  const handleFeedbackSubmit = useCallback(
+    (messageId: string) => {
+      if (!activeConversationId) return;
+      updateConversation(activeConversationId, (conv) => ({
+        ...conv,
+        messages: conv.messages.map((m) =>
+          m.id === messageId ? { ...m, feedbackSubmitted: true } : m
+        ),
+        updatedAt: new Date().toISOString(),
+      }));
+    },
+    [activeConversationId, updateConversation]
+  );
+
+  // Convert conversations to sidebar format
+  const sidebarItems = conversations.map((conv) => ({
+    id: conv.id,
+    title: conv.title,
+    updatedAt: conv.updatedAt,
+    messageCount: conv.messages.length,
+  }));
 
   return (
     <SidebarProvider>
       <Sidebar
-        conversations={conversations}
-        currentId={selectedConversationId || undefined}
+        conversations={sidebarItems}
+        currentId={activeConversationId || undefined}
         onSelect={handleSelectConversation}
         onNewChat={handleNewChat}
+        onDelete={handleDeleteConversation}
       />
 
       <SidebarInset>
@@ -139,50 +359,39 @@ export default function Home() {
         {/* Main content */}
         <main className="flex-1 p-4 md:p-6 lg:p-8">
           <div className="mx-auto max-w-3xl">
-            {/* Show selected conversation or new chat interface */}
-            {selectedConversation ? (
-              <SelectedConversation
-                response={selectedConversation}
+            {activeConversation ? (
+              <ConversationView
+                messages={activeConversation.messages}
+                streamingContent={isStreaming ? streamingContent : undefined}
                 apiUrl={API_URL}
-                onFeedbackSubmit={() => {
-                  setHistory((prev) =>
-                    prev.map((h) =>
-                      h.id === selectedConversation.id ? { ...h, feedbackSubmitted: true } : h
-                    )
-                  );
-                }}
-                onNewQuestion={handleNewChat}
-              />
+                onFeedbackSubmit={handleFeedbackSubmit}
+              >
+                {/* Follow-up input at bottom of conversation */}
+                {!isStreaming && (
+                  <div className="pt-4">
+                    <QueryInput
+                      onSubmit={handleSubmit}
+                      isLoading={isStreaming}
+                      placeholder="Ask a follow-up question..."
+                      maxLength={2000}
+                    />
+                  </div>
+                )}
+              </ConversationView>
             ) : (
               <>
-                {/* Query input */}
+                {/* Query input for new conversation */}
                 <section className="mb-8">
                   <QueryInput
                     onSubmit={handleSubmit}
-                    isLoading={isLoading}
+                    isLoading={isStreaming}
                     placeholder="Ask about algorithms, data structures, or competition strategies..."
                     maxLength={2000}
                   />
                 </section>
 
-                {/* Current streaming response */}
-                {currentQuery && (
-                  <section className="mb-8">
-                    <div className="mb-3">
-                      <h2 className="text-sm font-medium text-muted-foreground">Your question:</h2>
-                      <p className="text-foreground font-medium mt-1">{currentQuery}</p>
-                    </div>
-                    <ResponseStream
-                      query={currentQuery}
-                      apiUrl={API_URL}
-                      onComplete={handleComplete}
-                      onError={handleError}
-                    />
-                  </section>
-                )}
-
                 {/* Empty state */}
-                {!currentQuery && history.length === 0 && (
+                {conversations.length === 0 && (
                   <Empty className="py-12">
                     <EmptyHeader>
                       <EmptyMedia variant="icon">
@@ -199,49 +408,26 @@ export default function Home() {
                         <ExampleQuestion
                           question="How does dynamic programming differ from divide and conquer?"
                           onClick={handleSubmit}
-                          disabled={isLoading}
+                          disabled={isStreaming}
                         />
                         <ExampleQuestion
                           question="What is the time complexity of Dijkstra's algorithm?"
                           onClick={handleSubmit}
-                          disabled={isLoading}
+                          disabled={isStreaming}
                         />
                         <ExampleQuestion
                           question="Explain the union-find data structure"
                           onClick={handleSubmit}
-                          disabled={isLoading}
+                          disabled={isStreaming}
                         />
                         <ExampleQuestion
                           question="How to optimize DP solutions using space compression?"
                           onClick={handleSubmit}
-                          disabled={isLoading}
+                          disabled={isStreaming}
                         />
                       </div>
                     </EmptyContent>
                   </Empty>
-                )}
-
-                {/* Recent history (when no conversation selected) */}
-                {history.length > 0 && !currentQuery && (
-                  <section>
-                    <h2 className="text-lg font-semibold mb-4">Recent Questions</h2>
-                    <div className="space-y-2">
-                      {history.slice(0, 5).map((item) => (
-                        <Card
-                          key={item.id}
-                          className="cursor-pointer transition-colors hover:bg-accent"
-                          onClick={() => setSelectedConversationId(item.id)}
-                        >
-                          <CardContent className="p-4">
-                            <p className="font-medium">{item.query}</p>
-                            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                              {item.answer.slice(0, 150)}...
-                            </p>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </section>
                 )}
               </>
             )}
@@ -256,80 +442,6 @@ export default function Home() {
         </footer>
       </SidebarInset>
     </SidebarProvider>
-  );
-}
-
-function SelectedConversation({
-  response,
-  apiUrl,
-  onFeedbackSubmit,
-  onNewQuestion,
-}: {
-  response: CompletedResponse;
-  apiUrl: string;
-  onFeedbackSubmit: () => void;
-  onNewQuestion: () => void;
-}) {
-  return (
-    <div className="space-y-6">
-      {/* Back to new question */}
-      <Button variant="ghost" size="sm" onClick={onNewQuestion} className="gap-2 -ml-2">
-        <ArrowLeft className="size-4" />
-        New Question
-      </Button>
-
-      {/* Question */}
-      <div>
-        <h2 className="text-sm font-medium text-muted-foreground mb-1">Question</h2>
-        <p className="text-lg font-medium">{response.query}</p>
-      </div>
-
-      {/* Answer */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="prose dark:prose-invert max-w-none">{response.answer}</div>
-
-          {response.citations.length > 0 && (
-            <>
-              <Separator className="my-6" />
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Sources
-                </h4>
-                <div className="space-y-2">
-                  {response.citations.map((citation) => (
-                    <div key={citation.id} className="text-sm text-muted-foreground">
-                      <span className="font-mono text-primary">[{citation.id}]</span>{' '}
-                      {citation.documentTitle}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-
-          {response.metadata && (
-            <div className="mt-4 flex gap-4 text-xs text-muted-foreground">
-              <span>
-                Confidence: <span className="capitalize">{response.metadata.confidence}</span>
-              </span>
-              <span>Latency: {response.metadata.latencyMs}ms</span>
-            </div>
-          )}
-
-          {response.metadata?.queryId && !response.feedbackSubmitted && (
-            <>
-              <Separator className="my-6" />
-              <FeedbackWidget
-                queryId={response.metadata.queryId}
-                apiUrl={apiUrl}
-                onSubmit={onFeedbackSubmit}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
   );
 }
 

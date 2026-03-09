@@ -42,6 +42,22 @@ export const ingestionJobs = pgTable('ingestion_jobs', {
 });
 
 // ============================================================================
+// Conversations
+// ============================================================================
+
+/**
+ * Multi-turn conversation sessions
+ */
+export const conversations = pgTable('conversations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  title: text('title').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  messageCount: integer('message_count').default(0),
+  userHash: text('user_hash'),
+});
+
+// ============================================================================
 // Analytics & Sessions
 // ============================================================================
 
@@ -55,6 +71,7 @@ export const analyticsSessions = pgTable('analytics_sessions', {
 export const ragQueries = pgTable('rag_queries', {
   id: uuid('id').defaultRandom().primaryKey(),
   sessionId: uuid('session_id').references(() => analyticsSessions.id),
+  conversationId: uuid('conversation_id').references(() => conversations.id, { onDelete: 'set null' }),
   timestamp: timestamp('timestamp').defaultNow().notNull(),
   queryHash: text('query_hash'), // Anonymized
   executionTimeMs: integer('execution_time_ms'),

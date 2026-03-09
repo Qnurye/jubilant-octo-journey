@@ -14,7 +14,7 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { db, postgresSchema } from '@jubilant/database';
+import { db, postgresSchema, eq, sql } from '@jubilant/database';
 import {
   createRAGPipeline,
   formatSSEEvent,
@@ -95,6 +95,11 @@ async function withTimeout<T>(
 // Validation Schemas
 // ============================================================================
 
+const conversationTurnSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string().min(1).max(10000),
+});
+
 const querySchema = z.object({
   query: z
     .string()
@@ -104,6 +109,8 @@ const querySchema = z.object({
   topK: z.number().int().min(1).max(20).default(5),
   includeGraph: z.boolean().default(true),
   topicFilter: z.string().optional(),
+  conversationId: z.string().uuid().optional(),
+  history: z.array(conversationTurnSchema).max(20).optional(),
 });
 
 const streamQuerySchema = querySchema.extend({
@@ -142,13 +149,29 @@ async function logQueryMetrics(
   executionTimeMs: number,
   vectorHits: number,
   neo4jHits: number,
-  strategyUsed: 'hybrid' | 'vector_only' | 'graph_only'
+  strategyUsed: 'hybrid' | 'vector_only' | 'graph_only',
+  conversationId?: string
 ) {
   try {
+    // Verify conversation exists before using FK, fall back to null
+    let validConversationId: string | null = null;
+    if (conversationId) {
+      const [existing] = await db.postgres
+        .select({ id: postgresSchema.conversations.id })
+        .from(postgresSchema.conversations)
+        .where(eq(postgresSchema.conversations.id, conversationId))
+        .limit(1);
+      validConversationId = existing ? conversationId : null;
+      if (!existing) {
+        console.warn(`[metrics] conversationId ${conversationId} not found, logging without FK`);
+      }
+    }
+
     // Insert into rag_queries table
     await db.postgres.insert(postgresSchema.ragQueries).values({
       id: queryId,
       sessionId: sessionId || null,
+      conversationId: validConversationId,
       timestamp: new Date(),
       queryHash: null, // Anonymized - not storing actual query
       executionTimeMs,
@@ -156,6 +179,17 @@ async function logQueryMetrics(
       neo4jHits,
       strategyUsed,
     });
+
+    // If part of a conversation, increment messageCount and update timestamp
+    if (validConversationId) {
+      await db.postgres
+        .update(postgresSchema.conversations)
+        .set({
+          messageCount: sql`${postgresSchema.conversations.messageCount} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(eq(postgresSchema.conversations.id, validConversationId));
+    }
   } catch (error) {
     console.error('Failed to log query metrics:', error);
     // Don't throw - metrics logging shouldn't fail the request
@@ -275,6 +309,8 @@ query.post(
         topK: body.topK,
         includeGraph: body.includeGraph,
         topicFilter: body.topicFilter,
+        history: body.history,
+        conversationId: body.conversationId,
       };
 
       // Execute query with timeout (T086)
@@ -292,7 +328,8 @@ query.post(
         executionTimeMs,
         response.metadata.vectorResultCount,
         response.metadata.graphResultCount,
-        body.includeGraph ? 'hybrid' : 'vector_only'
+        body.includeGraph ? 'hybrid' : 'vector_only',
+        body.conversationId
       ).catch(console.error);
 
       return c.json(response, 200);
@@ -353,6 +390,8 @@ query.post(
         topK: body.topK,
         includeGraph: body.includeGraph,
         topicFilter: body.topicFilter,
+        history: body.history,
+        conversationId: body.conversationId,
       };
 
       return streamSSE(c, async (stream) => {
@@ -398,7 +437,8 @@ query.post(
                 executionTimeMs,
                 chunk.metadata.vectorResultCount,
                 chunk.metadata.graphResultCount,
-                body.includeGraph ? 'hybrid' : 'vector_only'
+                body.includeGraph ? 'hybrid' : 'vector_only',
+                body.conversationId
               ).catch(console.error);
 
               // Send enriched metadata

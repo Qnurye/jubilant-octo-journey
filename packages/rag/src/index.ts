@@ -90,6 +90,7 @@ export {
   hasInsufficientEvidence,
   formatContext,
   buildChatMessages,
+  truncateHistory,
   createQueryPrompt,
   createInsufficientEvidencePrompt,
   GROUNDED_RESPONSE_SYSTEM_PROMPT,

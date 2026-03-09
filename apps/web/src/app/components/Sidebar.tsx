@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, MessageCircle, MessageSquare } from 'lucide-react';
+import { Plus, MessageCircle, MessageSquare, Trash2 } from 'lucide-react';
 import {
   Sidebar as SidebarRoot,
   SidebarContent,
@@ -22,12 +22,18 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@/components/ui/empty';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ConversationItem {
   id: string;
   title: string;
-  preview: string;
-  timestamp: Date;
+  preview?: string;
+  timestamp?: Date;
+  updatedAt?: string;
   messageCount: number;
 }
 
@@ -36,6 +42,7 @@ interface SidebarProps {
   currentId?: string;
   onSelect: (id: string) => void;
   onNewChat: () => void;
+  onDelete?: (id: string) => void;
 }
 
 export function Sidebar({
@@ -43,6 +50,7 @@ export function Sidebar({
   currentId,
   onSelect,
   onNewChat,
+  onDelete,
 }: SidebarProps) {
   return (
     <SidebarRoot>
@@ -78,6 +86,7 @@ export function Sidebar({
                     conversation={conv}
                     isActive={conv.id === currentId}
                     onClick={() => onSelect(conv.id)}
+                    onDelete={onDelete ? () => onDelete(conv.id) : undefined}
                   />
                 ))}
               </SidebarMenu>
@@ -101,12 +110,15 @@ function ConversationMenuItem({
   conversation,
   isActive,
   onClick,
+  onDelete,
 }: {
   conversation: ConversationItem;
   isActive: boolean;
   onClick: () => void;
+  onDelete?: () => void;
 }) {
-  const timeAgo = getTimeAgo(conversation.timestamp);
+  const resolvedDate = conversation.timestamp || (conversation.updatedAt ? new Date(conversation.updatedAt) : new Date());
+  const timeAgo = getTimeAgo(resolvedDate);
   const { isMobile, setOpenMobile } = useSidebar();
 
   const handleClick = () => {
@@ -117,7 +129,7 @@ function ConversationMenuItem({
   };
 
   return (
-    <SidebarMenuItem>
+    <SidebarMenuItem className="group/item">
       <SidebarMenuButton
         isActive={isActive}
         onClick={handleClick}
@@ -133,15 +145,36 @@ function ConversationMenuItem({
               {timeAgo}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground truncate mt-1 w-full text-left">
-            {conversation.preview}
-          </p>
+          {conversation.preview && (
+            <p className="text-xs text-muted-foreground truncate mt-1 w-full text-left">
+              {conversation.preview}
+            </p>
+          )}
           <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
             <MessageSquare className="size-3" />
             <span>{conversation.messageCount}</span>
           </div>
         </div>
       </SidebarMenuButton>
+      {onDelete && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="absolute right-2 top-3 opacity-0 group-hover/item:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive z-10"
+              aria-label="Delete conversation"
+            >
+              <Trash2 className="size-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Delete conversation</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
     </SidebarMenuItem>
   );
 }

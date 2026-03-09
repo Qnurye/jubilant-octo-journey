@@ -44,6 +44,9 @@ Thumbs.db
 # Temporary
 tmp/
 
+# Python venvs
+*-venv/
+
 # Database Data (Docker Volumes)
 infrastructure/milvus/volumes/
 infrastructure/neo4j/data/

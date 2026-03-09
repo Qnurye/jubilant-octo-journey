@@ -14,6 +14,7 @@ import healthRoutes from './routes/health';
 import queryRoutes from './routes/query';
 import ingestRoutes from './routes/ingest';
 import feedbackRoutes from './routes/feedback';
+import conversationsRoutes from './routes/conversations';
 
 const app = new Hono();
 
@@ -26,6 +27,7 @@ app.route('/api/health', healthRoutes);
 app.route('/api/query', queryRoutes);
 app.route('/api/ingest', ingestRoutes);
 app.route('/api/feedback', feedbackRoutes);
+app.route('/api/conversations', conversationsRoutes);
 
 // Initialize database connection
 async function initializeDatabase() {
@@ -52,6 +54,7 @@ app.get('/', (c) => {
       query: '/api/query',
       ingest: '/api/ingest',
       feedback: '/api/feedback',
+      conversations: '/api/conversations',
     },
   });
 });
@@ -95,4 +98,5 @@ console.log(`Starting CompetitionTutor API on port ${port}...`);
 export default {
   port,
   fetch: app.fetch,
+  idleTimeout: 120, // Allow SSE streaming to take up to 2 minutes
 };
