@@ -343,6 +343,38 @@ export class Neo4jTripleStorage {
         created += result;
       }
 
+      // Create DISCUSSES relationships: Chunk -> Concept
+      // Derived from triples — each chunk discusses the concepts it mentions
+      const chunkConcepts = new Map<string, Set<string>>();
+      for (const triple of triples) {
+        if (!triple.sourceChunkId) continue;
+        if (!chunkConcepts.has(triple.sourceChunkId)) {
+          chunkConcepts.set(triple.sourceChunkId, new Set());
+        }
+        chunkConcepts.get(triple.sourceChunkId)!.add(triple.subject);
+        chunkConcepts.get(triple.sourceChunkId)!.add(triple.object);
+      }
+
+      if (chunkConcepts.size > 0) {
+        const discussesData = Array.from(chunkConcepts.entries()).flatMap(
+          ([chunkId, concepts]) =>
+            Array.from(concepts).map((concept) => ({ chunkId, concept }))
+        );
+
+        // Batch create DISCUSSES relationships
+        const batchSize = 100;
+        for (let i = 0; i < discussesData.length; i += batchSize) {
+          const batch = discussesData.slice(i, i + batchSize);
+          await session.run(
+            `UNWIND $items AS item
+             MATCH (c:Chunk {chunk_id: item.chunkId})
+             MERGE (concept:Concept {name: item.concept})
+             MERGE (c)-[:DISCUSSES]->(concept)`,
+            { items: batch }
+          );
+        }
+      }
+
       return created;
     } finally {
       await session.close();

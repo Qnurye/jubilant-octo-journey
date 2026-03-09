@@ -9,6 +9,7 @@
  */
 
 import { OpenAI } from '@llamaindex/openai';
+import type { GoogleAuth as GoogleAuthType } from 'google-auth-library';
 
 // ============================================================================
 // Error Types (T081)
@@ -230,6 +231,8 @@ export interface Qwen3LLMConfig {
   timeout?: number;
   /** Retry configuration for failed requests */
   retry?: Partial<RetryConfig>;
+  /** Auth provider: 'static' uses apiKey, 'gcp-adc' uses Google Application Default Credentials */
+  authProvider?: 'static' | 'gcp-adc';
 }
 
 /**
@@ -240,7 +243,7 @@ const DEFAULT_CONFIG: Partial<Qwen3LLMConfig> = {
   model: process.env.LLM_MODEL || 'Qwen/Qwen3-32B',
   maxTokens: 4096,
   temperature: 0.7,
-  timeout: 120000, // 2 minutes for long responses
+  timeout: parseInt(process.env.LLM_TIMEOUT || '300000', 10),
 };
 
 /**
@@ -271,6 +274,7 @@ export class Qwen3LLM {
   private config: Qwen3LLMConfig;
   private retryConfig: RetryConfig;
   private client: OpenAI;
+  private gcpAuth?: GoogleAuthType;
 
   constructor(config: Partial<Qwen3LLMConfig> = {}) {
     this.config = {
@@ -284,6 +288,9 @@ export class Qwen3LLM {
     };
 
     // Initialize LlamaIndex OpenAI client with custom base URL
+    // For GCP ADC, we set a placeholder key; actual auth is handled in stream/fetch calls.
+    // The LlamaIndex client is used for non-streaming `complete()` — for GCP ADC,
+    // we override the session options with a fresh token before each call.
     this.client = new OpenAI({
       apiKey: this.config.apiKey || 'not-needed',
       additionalSessionOptions: {
@@ -296,11 +303,46 @@ export class Qwen3LLM {
   }
 
   /**
+   * Get authorization token based on auth provider.
+   * For 'gcp-adc', dynamically fetches a token via Google ADC (with internal caching/refresh).
+   * For 'static' or undefined, returns the configured apiKey.
+   */
+  private async getAuthToken(): Promise<string> {
+    if (this.config.authProvider === 'gcp-adc') {
+      if (!this.gcpAuth) {
+        // Dynamic import to avoid loading google-auth-library when not needed
+        const { GoogleAuth } = await import('google-auth-library');
+        this.gcpAuth = new GoogleAuth({
+          scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+        });
+      }
+      const client = await this.gcpAuth.getClient();
+      const { token } = await client.getAccessToken();
+      return token || '';
+    }
+    return this.config.apiKey || '';
+  }
+
+  /**
    * Generate a complete response (non-streaming) with retry logic
    */
   async complete(messages: ChatMessage[]): Promise<string> {
     return this.withRetry(async () => {
       try {
+        // For GCP ADC, refresh the token on the LlamaIndex client before each request
+        if (this.config.authProvider === 'gcp-adc') {
+          const token = await this.getAuthToken();
+          this.client = new OpenAI({
+            apiKey: token || 'not-needed',
+            additionalSessionOptions: {
+              baseURL: this.config.baseUrl,
+            },
+            model: this.config.model,
+            temperature: this.config.temperature,
+            maxTokens: this.config.maxTokens,
+          });
+        }
+
         const response = await this.client.chat({
           messages: messages.map(m => ({
             role: m.role,
@@ -349,11 +391,12 @@ export class Qwen3LLM {
     try {
       // Use raw fetch for streaming to handle Ollama's reasoning field
       // (Ollama puts Qwen3 thinking content in delta.reasoning instead of delta.content)
+      const authToken = await this.getAuthToken();
       const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.config.apiKey && { Authorization: `Bearer ${this.config.apiKey}` }),
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify({
           model: this.config.model,
@@ -608,9 +651,28 @@ export class Qwen3LLM {
 }
 
 /**
- * Create a Qwen3LLM instance with environment configuration
+ * Create a Qwen3LLM instance with environment configuration.
+ *
+ * Supports two providers via LLM_PROVIDER env var:
+ * - 'openai' (default): Standard OpenAI-compatible endpoint using LLM_BASE_URL/LLM_API_KEY
+ * - 'vertex': Google Vertex AI OpenAI-compatible endpoint using GCP ADC for authentication
  */
 export function createLLM(config: Partial<Qwen3LLMConfig> = {}): Qwen3LLM {
+  const provider = process.env.LLM_PROVIDER || 'openai';
+
+  if (provider === 'vertex') {
+    const projectId = process.env.GCP_PROJECT_ID || '';
+    const region = process.env.GCP_REGION || 'us-central1';
+    return new Qwen3LLM({
+      baseUrl: `https://${region}-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/${region}/endpoints/openapi`,
+      model: process.env.LLM_MODEL || 'google/gemini-2.5-flash',
+      authProvider: 'gcp-adc',
+      timeout: parseInt(process.env.LLM_TIMEOUT || '60000', 10),
+      ...config,
+    });
+  }
+
+  // Default: existing OpenAI-compatible behavior
   return new Qwen3LLM({
     baseUrl: process.env.LLM_BASE_URL,
     apiKey: process.env.LLM_API_KEY,

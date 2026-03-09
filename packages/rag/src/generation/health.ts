@@ -10,7 +10,7 @@
  */
 
 import { Qwen3LLM, createLLM } from './llm';
-import { Qwen3Embedding, createEmbedder } from './embedder';
+import { createEmbedder, type Embedder } from './embedder';
 import { Qwen3Reranker, createReranker } from '../reranking/reranker';
 import type { ComponentHealth } from '../types';
 
@@ -31,12 +31,12 @@ export interface LLMHealthStatus {
  */
 export class LLMHealthChecker {
   private llm: Qwen3LLM;
-  private embedder: Qwen3Embedding;
+  private embedder: Embedder;
   private reranker: Qwen3Reranker;
 
   constructor(options?: {
     llm?: Qwen3LLM;
-    embedder?: Qwen3Embedding;
+    embedder?: Embedder;
     reranker?: Qwen3Reranker;
   }) {
     this.llm = options?.llm || createLLM();

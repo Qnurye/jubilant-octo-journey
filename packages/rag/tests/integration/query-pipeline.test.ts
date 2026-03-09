@@ -56,6 +56,11 @@ function createMockRetrievalResult(overrides: Partial<RetrievalResult> = {}): Re
       documentTitle: 'Algorithm Handbook',
       documentUrl: 'https://example.com/algorithms',
       chunkIndex: 0,
+      totalChunks: 1,
+      tokenCount: 50,
+      hasCode: false,
+      hasFormula: false,
+      hasTable: false,
     },
     ...overrides,
   };
@@ -70,10 +75,14 @@ function createMockRankedResult(overrides: Partial<RankedResult> = {}): RankedRe
       documentTitle: 'Algorithm Handbook',
       documentUrl: 'https://example.com/algorithms',
       chunkIndex: 0,
+      totalChunks: 1,
+      tokenCount: 50,
+      hasCode: false,
+      hasFormula: false,
+      hasTable: false,
     },
     rerankScore: 0.85,
-    originalScore: 0.75,
-    source: 'vector',
+    originalFusedScore: 0.75,
     ...overrides,
   };
 }
@@ -98,7 +107,7 @@ describe('User Story 1: Student Asks a Competition Question', () => {
         createMockRankedResult({
           id: 'chunk-2',
           content: 'It uses memoization to avoid redundant calculations.',
-          metadata: { documentId: 'doc-2', documentTitle: 'CS Algorithms', documentUrl: 'https://example.com/cs', chunkIndex: 1 },
+          metadata: { documentId: 'doc-2', documentTitle: 'CS Algorithms', documentUrl: 'https://example.com/cs', chunkIndex: 1, totalChunks: 1, tokenCount: 40, hasCode: false, hasFormula: false, hasTable: false },
           rerankScore: 0.85,
         }),
       ];
@@ -379,8 +388,7 @@ describe('Pipeline Flow Integration', () => {
           fusedScore: data.score,
           metadata: data.result.metadata,
           rerankScore: data.score,
-          originalScore: data.result.score,
-          source: data.result.source,
+          originalFusedScore: data.result.score,
         }))
         .sort((a, b) => b.fusedScore - a.fusedScore);
 

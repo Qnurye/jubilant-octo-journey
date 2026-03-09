@@ -1,11 +1,38 @@
 /**
- * Qwen3 Embedding Client
+ * Embedding Client Factory
  *
- * Custom embedding implementation for Qwen3-Embedding-8B model
- * via OpenAI-compatible API.
+ * Provides a unified Embedder interface and factory function that supports
+ * multiple embedding providers: OpenAI-compatible (Qwen3) and Google Vertex AI.
  *
  * @module @jubilant/rag/generation/embedder
  */
+
+import { VertexEmbedding } from './embedder-vertex';
+import type { VertexEmbeddingConfig } from './embedder-vertex';
+
+// ============================================================================
+// Common Embedder Interface
+// ============================================================================
+
+/**
+ * Supported embedding providers
+ */
+export type EmbeddingProvider = 'openai' | 'vertex';
+
+/**
+ * Common interface that all embedding providers implement
+ */
+export interface Embedder {
+  getTextEmbedding(text: string): Promise<number[]>;
+  getTextEmbeddings(texts: string[]): Promise<number[][]>;
+  getQueryEmbedding(query: string): Promise<number[]>;
+  healthCheck(): Promise<{ healthy: boolean; latencyMs: number; message?: string }>;
+  readonly dimensions: number;
+}
+
+// ============================================================================
+// OpenAI-Compatible (Qwen3) Embedding Provider
+// ============================================================================
 
 /**
  * Configuration for Qwen3Embedding
@@ -19,8 +46,10 @@ export interface Qwen3EmbeddingConfig {
   model: string;
   /** Embedding dimensions (default: 4096 for Qwen3-Embedding-8B) */
   dimensions?: number;
-  /** Request timeout in milliseconds */
+  /** Request timeout in milliseconds (default: 120000 for local model compatibility) */
   timeout?: number;
+  /** Maximum texts per API call (default: 32) */
+  batchSize?: number;
 }
 
 /**
@@ -29,8 +58,9 @@ export interface Qwen3EmbeddingConfig {
 const DEFAULT_CONFIG: Partial<Qwen3EmbeddingConfig> = {
   baseUrl: process.env.EMBEDDING_BASE_URL || 'http://localhost:8001/v1',
   model: process.env.EMBEDDING_MODEL || 'Qwen/Qwen3-Embedding-8B',
-  dimensions: 4096,
-  timeout: 30000,
+  dimensions: parseInt(process.env.EMBEDDING_DIMENSIONS || '4096', 10),
+  timeout: parseInt(process.env.EMBEDDING_TIMEOUT || '300000', 10),
+  batchSize: 32,
 };
 
 /**
@@ -56,7 +86,7 @@ interface EmbeddingResponse {
  * This is a standalone implementation that doesn't extend LlamaIndex BaseEmbedding
  * to avoid type compatibility issues. It provides the same interface.
  */
-export class Qwen3Embedding {
+export class Qwen3Embedding implements Embedder {
   private config: Qwen3EmbeddingConfig;
 
   constructor(config: Partial<Qwen3EmbeddingConfig> = {}) {
@@ -78,8 +108,7 @@ export class Qwen3Embedding {
    * Embed multiple text strings in a batch
    */
   async getTextEmbeddings(texts: string[]): Promise<number[][]> {
-    // Process in batches of 32 to avoid overloading the API
-    const batchSize = 32;
+    const batchSize = this.config.batchSize || 32;
     const allEmbeddings: number[][] = [];
 
     for (let i = 0; i < texts.length; i += batchSize) {
@@ -110,7 +139,7 @@ export class Qwen3Embedding {
     const controller = new AbortController();
     const timeoutId = setTimeout(
       () => controller.abort(),
-      this.config.timeout || 30000
+      this.config.timeout || 120000
     );
 
     try {
@@ -171,10 +200,32 @@ export class Qwen3Embedding {
   }
 }
 
+// ============================================================================
+// Embedder Factory
+// ============================================================================
+
 /**
- * Create a Qwen3Embedding instance with environment configuration
+ * Create an embedder instance based on the configured provider.
+ *
+ * Provider is selected via EMBEDDING_PROVIDER env var:
+ * - "openai" (default): Uses Qwen3Embedding (OpenAI-compatible API)
+ * - "vertex": Uses VertexEmbedding (Google Vertex AI)
  */
-export function createEmbedder(config: Partial<Qwen3EmbeddingConfig> = {}): Qwen3Embedding {
+export function createEmbedder(config: Partial<Qwen3EmbeddingConfig> = {}): Embedder {
+  const provider = (process.env.EMBEDDING_PROVIDER || 'openai') as EmbeddingProvider;
+
+  if (provider === 'vertex') {
+    return new VertexEmbedding({
+      projectId: process.env.GCP_PROJECT_ID || '',
+      region: process.env.GCP_REGION || 'us-central1',
+      model: process.env.EMBEDDING_MODEL || 'text-multilingual-embedding-002',
+      dimensions: parseInt(process.env.EMBEDDING_DIMENSIONS || '768', 10),
+      timeout: parseInt(process.env.EMBEDDING_TIMEOUT || '30000', 10),
+      batchSize: config.batchSize,
+    });
+  }
+
+  // Default: OpenAI-compatible (existing behavior)
   return new Qwen3Embedding({
     baseUrl: process.env.EMBEDDING_BASE_URL,
     apiKey: process.env.EMBEDDING_API_KEY,

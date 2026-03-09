@@ -11,9 +11,19 @@ import type { NodeWithScore, BaseNode } from 'llamaindex';
 import { MetadataMode } from 'llamaindex';
 
 /**
+ * Supported reranker API providers
+ *
+ * - 'default' / 'jina': POST /rerank with { model, query, documents: string[], top_n }
+ * - 'cohere': POST /rerank with { model, query, documents: string[], top_n, return_documents: true }
+ */
+export type RerankerProvider = 'default' | 'jina' | 'cohere';
+
+/**
  * Configuration for Qwen3Reranker
  */
 export interface Qwen3RerankerConfig {
+  /** Whether reranking is enabled (default: true). When false, results pass through as-is. */
+  enabled: boolean;
   /** Base URL for the reranker service */
   baseUrl: string;
   /** API key (optional for local deployments) */
@@ -26,17 +36,21 @@ export interface Qwen3RerankerConfig {
   confidenceThreshold: number;
   /** Request timeout in milliseconds */
   timeout?: number;
+  /** API provider format (default = jina/vLLM style) */
+  provider?: RerankerProvider;
 }
 
 /**
  * Default configuration
  */
 const DEFAULT_CONFIG: Partial<Qwen3RerankerConfig> = {
+  enabled: process.env.RERANKER_ENABLED !== 'false',
   baseUrl: process.env.RERANKER_BASE_URL || 'http://localhost:8002/v1',
   model: process.env.RERANKER_MODEL || 'Qwen/Qwen3-Reranker-4B',
   topN: parseInt(process.env.RAG_RERANK_TOP_K || '5', 10),
   confidenceThreshold: parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD || '0.6'),
-  timeout: 30000,
+  timeout: parseInt(process.env.RERANKER_TIMEOUT || '60000', 10),
+  provider: (process.env.RERANKER_PROVIDER as RerankerProvider) || 'default',
 };
 
 /**
@@ -88,6 +102,16 @@ export class Qwen3Reranker {
       return [];
     }
 
+    // When disabled, return documents as-is preserving original order
+    if (!this.config.enabled) {
+      return documents.slice(0, this.config.topN).map((content, i) => ({
+        index: i,
+        content,
+        score: 1.0 - i * 0.01,
+        isAboveThreshold: true,
+      }));
+    }
+
     const response = await this.callRerankerAPI(query, documents);
     console.log('Reranker response:', JSON.stringify(response, null, 2));
 
@@ -113,6 +137,14 @@ export class Qwen3Reranker {
       return [];
     }
 
+    // When disabled, return nodes as-is preserving original order and scores
+    if (!this.config.enabled) {
+      return nodes.slice(0, this.config.topN).map((n, i) => ({
+        node: n.node,
+        score: n.score ?? (1.0 - i * 0.01),
+      }));
+    }
+
     // Extract text content from nodes
     const documents = nodes.map(n =>
       n.node.getContent(MetadataMode.NONE)
@@ -131,6 +163,47 @@ export class Qwen3Reranker {
       }));
 
     return rerankedNodes;
+  }
+
+  /**
+   * Build request body based on provider format
+   */
+  private buildRequestBody(query: string, documents: string[]): Record<string, unknown> {
+    const base = {
+      model: this.config.model,
+      query,
+      documents,
+      top_n: this.config.topN,
+    };
+
+    switch (this.config.provider) {
+      case 'cohere':
+        return { ...base, return_documents: true };
+      case 'jina':
+      case 'default':
+      default:
+        return base;
+    }
+  }
+
+  /**
+   * Normalize API response to internal RerankerResponse format.
+   * Handles differences in field names across providers:
+   * - relevance_score (jina/vLLM) vs score (some providers)
+   */
+  private normalizeResponse(data: any): RerankerResponse {
+    if (!data.results || !Array.isArray(data.results)) {
+      throw new Error(`Invalid reranker response format: ${JSON.stringify(data)}`);
+    }
+
+    return {
+      results: data.results.map((r: any) => ({
+        index: r.index,
+        relevance_score: r.relevance_score ?? r.score ?? 0,
+      })),
+      model: data.model,
+      usage: data.usage,
+    };
   }
 
   /**
@@ -157,12 +230,7 @@ export class Qwen3Reranker {
             Authorization: `Bearer ${this.config.apiKey}`,
           }),
         },
-        body: JSON.stringify({
-          model: this.config.model,
-          query,
-          documents,
-          top_n: this.config.topN,
-        }),
+        body: JSON.stringify(this.buildRequestBody(query, documents)),
         signal: controller.signal,
       });
 
@@ -172,11 +240,7 @@ export class Qwen3Reranker {
       }
 
       const data = (await response.json()) as any;
-      if (!data.results || !Array.isArray(data.results)) {
-        throw new Error(`Invalid reranker response format: ${JSON.stringify(data)}`);
-      }
-
-      return data as RerankerResponse;
+      return this.normalizeResponse(data);
     } catch (error) {
       console.warn(
         `Reranker API unavailable, using mock scores: ${error instanceof Error ? error.message : String(error)}`
@@ -204,15 +268,45 @@ export class Qwen3Reranker {
    * Check if the reranker service is healthy
    */
   async healthCheck(): Promise<{ healthy: boolean; latencyMs: number; message?: string }> {
+    if (!this.config.enabled) {
+      return { healthy: true, latencyMs: 0, message: 'Reranker disabled' };
+    }
+
     const start = Date.now();
+    const url = `${this.config.baseUrl}/rerank`;
 
     try {
-      // Test with a simple rerank request
-      await this.rerank('test query', ['test document']);
-      return {
-        healthy: true,
-        latencyMs: Date.now() - start,
-      };
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        this.config.timeout || 30000
+      );
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(this.config.apiKey && {
+              Authorization: `Bearer ${this.config.apiKey}`,
+            }),
+          },
+          body: JSON.stringify(this.buildRequestBody('test query', ['test document'])),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const error = await response.text();
+          throw new Error(`Reranker API error: ${response.status} - ${error}`);
+        }
+
+        return {
+          healthy: true,
+          latencyMs: Date.now() - start,
+        };
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch (error) {
       return {
         healthy: false,
@@ -230,6 +324,13 @@ export class Qwen3Reranker {
     if (topScore >= 0.6) return 'medium';
     if (topScore >= 0.4) return 'low';
     return 'insufficient';
+  }
+
+  /**
+   * Get whether the reranker is enabled
+   */
+  get enabled(): boolean {
+    return this.config.enabled;
   }
 
   /**
@@ -251,7 +352,14 @@ export class Qwen3Reranker {
  * Create a Qwen3Reranker instance with environment configuration
  */
 export function createReranker(config: Partial<Qwen3RerankerConfig> = {}): Qwen3Reranker {
+  const enabled = config.enabled ?? (process.env.RERANKER_ENABLED !== 'false');
+
+  if (!enabled) {
+    console.log('Reranker disabled via RERANKER_ENABLED=false');
+  }
+
   return new Qwen3Reranker({
+    enabled,
     baseUrl: process.env.RERANKER_BASE_URL,
     apiKey: process.env.RERANKER_API_KEY,
     model: process.env.RERANKER_MODEL,
@@ -261,6 +369,7 @@ export function createReranker(config: Partial<Qwen3RerankerConfig> = {}): Qwen3
     confidenceThreshold: process.env.RAG_CONFIDENCE_THRESHOLD
       ? parseFloat(process.env.RAG_CONFIDENCE_THRESHOLD)
       : undefined,
+    provider: (process.env.RERANKER_PROVIDER as RerankerProvider) || undefined,
     ...config,
   });
 }

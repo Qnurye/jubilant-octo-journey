@@ -32,11 +32,15 @@ function createMockRankedResult(overrides: Partial<RankedResult> = {}): RankedRe
       documentTitle: 'Test Document',
       documentUrl: 'https://example.com/doc',
       chunkIndex: 0,
+      totalChunks: 1,
+      tokenCount: 50,
+      hasCode: false,
+      hasFormula: false,
+      hasTable: false,
       ...overrides.metadata,
     },
     rerankScore: 0.85,
-    originalScore: 0.75,
-    source: 'vector',
+    originalFusedScore: 0.75,
     ...overrides,
   };
 }
@@ -63,7 +67,7 @@ describe('createCitations', () => {
       createMockRankedResult({ id: 'chunk-1' }),
       createMockRankedResult({
         id: 'chunk-2',
-        metadata: { documentId: 'doc-2', documentTitle: 'Second Doc', documentUrl: 'https://example.com/doc2', chunkIndex: 1 },
+        metadata: { documentId: 'doc-2', documentTitle: 'Second Doc', documentUrl: 'https://example.com/doc2', chunkIndex: 1, totalChunks: 1, tokenCount: 40, hasCode: false, hasFormula: false, hasTable: false },
         rerankScore: 0.75,
       }),
     ];

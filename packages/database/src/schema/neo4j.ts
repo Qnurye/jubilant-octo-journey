@@ -33,13 +33,22 @@ export const initGraphConstraints = async (driver: Driver) => {
       `)
     );
 
-    // Chunk: hash must be unique (deduplication)
+    // Drop the legacy chunk_hash_unique constraint — content hashes are NOT
+    // unique across chunks (different documents can share identical sections
+    // such as headers, license text, or common formulas).
     await session.executeWrite(tx =>
-        tx.run(`
-          CREATE CONSTRAINT chunk_hash_unique IF NOT EXISTS
-          FOR (c:Chunk) REQUIRE c.hash IS UNIQUE
-        `)
-      );
+      tx.run(`
+        DROP CONSTRAINT chunk_hash_unique IF EXISTS
+      `)
+    );
+
+    // Create an index on Chunk.hash for fast lookups (non-unique)
+    await session.executeWrite(tx =>
+      tx.run(`
+        CREATE INDEX chunk_hash_index IF NOT EXISTS
+        FOR (c:Chunk) ON (c.hash)
+      `)
+    );
 
     console.log('Neo4j constraints initialized successfully.');
   } catch (error) {

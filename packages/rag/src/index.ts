@@ -62,7 +62,10 @@ export type {
 // ============================================================================
 
 export { Qwen3Embedding, createEmbedder } from './generation/embedder';
-export type { Qwen3EmbeddingConfig } from './generation/embedder';
+export type { Qwen3EmbeddingConfig, Embedder, EmbeddingProvider } from './generation/embedder';
+
+export { VertexEmbedding } from './generation/embedder-vertex';
+export type { VertexEmbeddingConfig } from './generation/embedder-vertex';
 
 export { Qwen3LLM, createLLM, LLMServiceError, classifyLLMError } from './generation/llm';
 export type { Qwen3LLMConfig, ChatMessage, LLMStreamChunk, LLMErrorType, RetryConfig } from './generation/llm';
@@ -79,7 +82,7 @@ export type { LLMHealthStatus } from './generation/health';
 // ============================================================================
 
 export { Qwen3Reranker, createReranker } from './reranking/reranker';
-export type { Qwen3RerankerConfig, RerankedResult } from './reranking/reranker';
+export type { Qwen3RerankerConfig, RerankedResult, RerankerProvider } from './reranking/reranker';
 
 // ============================================================================
 // Generation Utilities

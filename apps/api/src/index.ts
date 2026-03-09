@@ -15,6 +15,7 @@ import queryRoutes from './routes/query';
 import ingestRoutes from './routes/ingest';
 import feedbackRoutes from './routes/feedback';
 import conversationsRoutes from './routes/conversations';
+import adminRoutes from './routes/admin';
 
 const app = new Hono();
 
@@ -28,6 +29,7 @@ app.route('/api/query', queryRoutes);
 app.route('/api/ingest', ingestRoutes);
 app.route('/api/feedback', feedbackRoutes);
 app.route('/api/conversations', conversationsRoutes);
+app.route('/api/admin', adminRoutes);
 
 // Initialize database connection
 async function initializeDatabase() {
@@ -55,6 +57,7 @@ app.get('/', (c) => {
       ingest: '/api/ingest',
       feedback: '/api/feedback',
       conversations: '/api/conversations',
+      admin: '/api/admin',
     },
   });
 });

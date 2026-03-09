@@ -12,7 +12,7 @@ import type { Driver } from 'neo4j-driver';
 import type { RetrievalResult, FusedResult, ChunkMetadata } from '../types';
 import { MilvusRetriever, type MilvusRetrieverConfig } from './vector';
 import { Neo4jGraphRetriever, type Neo4jGraphRetrieverConfig } from './graph';
-import { Qwen3Embedding, createEmbedder } from '../generation/embedder';
+import { createEmbedder, type Embedder } from '../generation/embedder';
 
 /**
  * Configuration for HybridRetriever
@@ -134,7 +134,7 @@ export class HybridRetriever {
   constructor(
     milvusClient: MilvusClient,
     neo4jDriver: Driver,
-    embedder?: Qwen3Embedding,
+    embedder?: Embedder,
     config: Partial<HybridRetrieverConfig> = {}
   ) {
     this.config = {
@@ -361,7 +361,7 @@ export class HybridRetriever {
 export function createHybridRetriever(
   milvusClient: MilvusClient,
   neo4jDriver: Driver,
-  embedder?: Qwen3Embedding,
+  embedder?: Embedder,
   config?: Partial<HybridRetrieverConfig>
 ): HybridRetriever {
   return new HybridRetriever(milvusClient, neo4jDriver, embedder, config);

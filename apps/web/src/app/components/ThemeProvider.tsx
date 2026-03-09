@@ -8,7 +8,6 @@ export function ThemeProvider({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    // @ts-expect-error - next-themes types are incorrect for children prop
     <NextThemesProvider
       attribute="class"
       defaultTheme="system"

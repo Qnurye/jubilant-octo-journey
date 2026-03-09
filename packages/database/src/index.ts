@@ -23,6 +23,9 @@ export type { HealthStatus } from './health/index';
 // Re-export commonly used drizzle-orm operators for query building
 export { eq, and, or, not, isNull, isNotNull, gt, gte, lt, lte, ne, like, ilike, inArray, sql } from 'drizzle-orm';
 
+// Re-export neo4j integer helper for Cypher parameter type safety
+export { int as neo4jInt } from 'neo4j-driver';
+
 type PostgresDb = PostgresJsDatabase<typeof postgresSchema>;
 
 export class DatabaseManager {

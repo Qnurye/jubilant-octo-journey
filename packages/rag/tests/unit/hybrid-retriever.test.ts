@@ -15,7 +15,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { reciprocalRankFusion } from '../../src/retrieval/hybrid';
-import type { RetrievalResult, RetrievalStrategy, RetrievalMetrics } from '../../src/retrieval/hybrid';
+import type { RetrievalResult } from '../../src/types';
+import type { RetrievalStrategy, RetrievalMetrics } from '../../src/retrieval/hybrid';
 
 // ============================================================================
 // Test Data Factories
@@ -32,6 +33,11 @@ function createMockRetrievalResult(overrides: Partial<RetrievalResult> = {}): Re
       documentTitle: 'Test Document',
       documentUrl: 'https://example.com/doc',
       chunkIndex: 0,
+      totalChunks: 1,
+      tokenCount: 20,
+      hasCode: false,
+      hasFormula: false,
+      hasTable: false,
     },
     ...overrides,
   };
@@ -119,7 +125,7 @@ describe('reciprocalRankFusion', () => {
         createMockRetrievalResult({
           id: 'chunk-1',
           content: 'Original content',
-          metadata: { documentTitle: 'Original Title', documentId: '', documentUrl: '', chunkIndex: 0 },
+          metadata: { documentTitle: 'Original Title', documentId: '', documentUrl: '', chunkIndex: 0, totalChunks: 1, tokenCount: 20, hasCode: false, hasFormula: false, hasTable: false },
         }),
       ];
 

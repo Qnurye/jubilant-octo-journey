@@ -1,13 +1,13 @@
 /**
  * Batch Embedding for Ingestion
  *
- * Implements efficient batch embedding of document chunks using Qwen3Embedding.
+ * Implements efficient batch embedding of document chunks using any Embedder provider.
  * Supports progress tracking and error handling for large document ingestion.
  *
  * @module @jubilant/rag/ingestion/embedder
  */
 
-import { Qwen3Embedding, createEmbedder } from '../generation/embedder';
+import { createEmbedder, type Embedder } from '../generation/embedder';
 import type { EmbeddedChunk, ChunkMetadata } from '../types';
 import type { Chunk } from './chunker';
 
@@ -23,13 +23,15 @@ export interface BatchEmbedderConfig {
   retryAttempts: number;
   /** Delay between retries in ms */
   retryDelayMs: number;
+  /** Timeout for individual embedding API calls in ms (passed to the underlying embedder) */
+  embeddingTimeout?: number;
 }
 
 const DEFAULT_CONFIG: BatchEmbedderConfig = {
   batchSize: 10,
   concurrency: 3,
   retryAttempts: 3,
-  retryDelayMs: 1000,
+  retryDelayMs: 2000,
 };
 
 /**
@@ -58,12 +60,16 @@ export interface BatchEmbedResult {
  * BatchEmbedder - Efficient batch embedding for document ingestion
  */
 export class BatchEmbedder {
-  private embedder: Qwen3Embedding;
+  private embedder: Embedder;
   private config: BatchEmbedderConfig;
 
-  constructor(embedder?: Qwen3Embedding, config: Partial<BatchEmbedderConfig> = {}) {
-    this.embedder = embedder || createEmbedder();
-    this.config = { ...DEFAULT_CONFIG, ...config };
+  constructor(embedder?: Embedder, config: Partial<BatchEmbedderConfig> = {}) {
+    const mergedConfig = { ...DEFAULT_CONFIG, ...config };
+    // Pass timeout through to the underlying Qwen3Embedding if no custom embedder provided
+    this.embedder = embedder || createEmbedder({
+      ...(mergedConfig.embeddingTimeout ? { timeout: mergedConfig.embeddingTimeout } : {}),
+    });
+    this.config = mergedConfig;
   }
 
   /**
@@ -151,9 +157,10 @@ export class BatchEmbedder {
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
 
-        // Wait before retrying
+        // Wait before retrying with exponential backoff
         if (attempt < this.config.retryAttempts - 1) {
-          await this.delay(this.config.retryDelayMs * (attempt + 1));
+          const backoff = this.config.retryDelayMs * Math.pow(2, attempt);
+          await this.delay(backoff);
         }
       }
     }
@@ -243,7 +250,7 @@ export class BatchEmbedder {
  * Create a BatchEmbedder with default configuration
  */
 export function createBatchEmbedder(
-  embedder?: Qwen3Embedding,
+  embedder?: Embedder,
   config?: Partial<BatchEmbedderConfig>
 ): BatchEmbedder {
   return new BatchEmbedder(embedder, config);

@@ -29,7 +29,8 @@ import {
   VALID_PREDICATES,
   MIN_CONFIDENCE,
 } from '../../src/ingestion/extractor';
-import type { KnowledgeTriple, Chunk } from '../../src/types';
+import type { KnowledgeTriple } from '../../src/types';
+import type { Chunk } from '../../src/ingestion/chunker';
 
 // ============================================================================
 // User Story 3: Knowledge Base Ingestion with Content Preservation

@@ -30,7 +30,7 @@ import {
 } from './retrieval/metrics';
 import { Qwen3Reranker, createReranker } from './reranking/reranker';
 import { Qwen3LLM, createLLM, type ChatMessage } from './generation/llm';
-import { Qwen3Embedding, createEmbedder } from './generation/embedder';
+import { createEmbedder } from './generation/embedder';
 import { createCitations, filterUsedCitations } from './generation/citations';
 import {
   buildChatMessages,
@@ -286,7 +286,7 @@ export class RAGPipeline {
     );
     metricsCollector.recordFusionResults(retrievalResult.results);
 
-    // Step 2: Rerank fused results with timing
+    // Step 2: Rerank fused results (or pass through if reranker is disabled)
     metricsCollector.startStage('rerank');
     const rankedResults = await this.rerankFusedResults(
       query,

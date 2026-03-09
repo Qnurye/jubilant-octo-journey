@@ -9,7 +9,7 @@
 
 import type { MilvusClient, SearchResultData } from '@zilliz/milvus2-sdk-node';
 import type { RetrievalResult, ChunkMetadata } from '../types';
-import { Qwen3Embedding, createEmbedder } from '../generation/embedder';
+import { createEmbedder, type Embedder } from '../generation/embedder';
 
 /**
  * Configuration for MilvusRetriever
@@ -59,12 +59,12 @@ type MilvusSearchResult = SearchResultData & {
  */
 export class MilvusRetriever {
   private client: MilvusClient;
-  private embedder: Qwen3Embedding;
+  private embedder: Embedder;
   private config: MilvusRetrieverConfig;
 
   constructor(
     client: MilvusClient,
-    embedder?: Qwen3Embedding,
+    embedder?: Embedder,
     config: Partial<MilvusRetrieverConfig> = {}
   ) {
     this.client = client;
@@ -207,7 +207,7 @@ export class MilvusRetriever {
  */
 export function createMilvusRetriever(
   client: MilvusClient,
-  embedder?: Qwen3Embedding,
+  embedder?: Embedder,
   config?: Partial<MilvusRetrieverConfig>
 ): MilvusRetriever {
   return new MilvusRetriever(client, embedder, config);

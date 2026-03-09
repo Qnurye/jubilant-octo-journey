@@ -9,13 +9,14 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "llamaindex": "^0.9.0",
-    "@llamaindex/openai": "^0.1.0",
     "@jubilant/database": "workspace:*",
+    "@llamaindex/openai": "^0.1.0",
     "@zilliz/milvus2-sdk-node": "^2.4.0",
+    "drizzle-orm": "^0.29.0",
+    "google-auth-library": "^10.6.1",
+    "llamaindex": "^0.9.0",
     "neo4j-driver": "^5.17.0",
-    "zod": "^3.22.4",
-    "drizzle-orm": "^0.29.0"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "vitest": "^1.2.1",

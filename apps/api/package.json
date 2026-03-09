@@ -3,6 +3,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint .",
     "format": "prettier --write .",
     "type-check": "tsc --noEmit"
@@ -19,6 +21,7 @@
     "@repo/types": "workspace:*",
     "@types/bun": "latest",
     "eslint": "^9.39.2",
-    "prettier": "^3.7.4"
+    "prettier": "^3.7.4",
+    "vitest": "^1.2.1"
   }
 }

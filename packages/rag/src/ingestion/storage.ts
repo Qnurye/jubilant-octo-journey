@@ -7,7 +7,7 @@
  * @module @jubilant/rag/ingestion/storage
  */
 
-import type { MilvusClient } from '@zilliz/milvus2-sdk-node';
+import type { MilvusClient, MutationResult } from '@zilliz/milvus2-sdk-node';
 import type { Driver, Session } from 'neo4j-driver';
 import type { EmbeddedChunk, ChunkMetadata } from '../types';
 
@@ -21,13 +21,32 @@ export interface StorageConfig {
   milvusBatchSize: number;
   /** Batch size for Neo4j operations */
   neo4jBatchSize: number;
+  /** Timeout for storage operations in ms (default: 300000 = 5 minutes) */
+  operationTimeout: number;
 }
 
 const DEFAULT_CONFIG: StorageConfig = {
   collectionName: 'knowledge_chunks',
   milvusBatchSize: 100,
   neo4jBatchSize: 50,
+  operationTimeout: parseInt(process.env.STORAGE_TIMEOUT || '300000', 10),
 };
+
+/**
+ * Wrap a promise with a timeout
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`${operation} timed out after ${timeoutMs}ms`)),
+      timeoutMs
+    );
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+}
 
 /**
  * Result of a storage operation
@@ -100,12 +119,51 @@ export class MilvusChunkStorage {
         };
       });
 
-      await this.client.insert({
-        collection_name: this.config.collectionName,
-        data,
-      });
+      const insertResult = await withTimeout(
+        this.client.insert({
+          collection_name: this.config.collectionName,
+          data,
+        }),
+        this.config.operationTimeout,
+        `Milvus insert batch (${batch.length} chunks)`
+      );
 
-      inserted += batch.length;
+      // Validate the insert response using SDK's MutationResult type
+      const result = insertResult as MutationResult;
+
+      // Check status for errors (ResStatus.error_code is string|number)
+      const errorCode = result.status?.error_code;
+      if (errorCode && errorCode !== 'Success' && errorCode !== 0) {
+        throw new Error(
+          `Milvus insert returned error code ${errorCode}: ${result.status?.reason ?? 'Unknown error'}`
+        );
+      }
+
+      // Check for rejected rows
+      if (result.err_index && result.err_index.length > 0) {
+        throw new Error(`Milvus rejected ${result.err_index.length} of ${batch.length} rows during insert`);
+      }
+
+      // Use insert_cnt (string per SDK types) for actual count
+      const parsedCnt = result.insert_cnt ? parseInt(result.insert_cnt, 10) : NaN;
+      const succCount = result.succ_index ? result.succ_index.length : undefined;
+      let sdkInsertCount: number;
+      if (!isNaN(parsedCnt)) {
+        sdkInsertCount = parsedCnt;
+      } else if (succCount != null) {
+        sdkInsertCount = succCount;
+      } else {
+        sdkInsertCount = batch.length;
+        console.warn(
+          `Milvus SDK did not report insert count for batch of ${batch.length}; assuming all inserted`
+        );
+      }
+      if (sdkInsertCount !== batch.length && (!result.err_index || result.err_index.length === 0)) {
+        console.warn(
+          `Milvus count mismatch: sent ${batch.length} but SDK reported ${sdkInsertCount} inserted (no err_index)`
+        );
+      }
+      inserted += sdkInsertCount;
 
       if (onProgress) {
         onProgress(inserted, chunks.length);
@@ -113,9 +171,13 @@ export class MilvusChunkStorage {
     }
 
     // Flush to ensure data is persisted
-    await this.client.flush({
-      collection_names: [this.config.collectionName],
-    });
+    await withTimeout(
+      this.client.flush({
+        collection_names: [this.config.collectionName],
+      }),
+      this.config.operationTimeout,
+      'Milvus flush'
+    );
 
     return inserted;
   }
@@ -191,20 +253,24 @@ export class Neo4jChunkStorage {
 
     try {
       // First, ensure the Document node exists
-      await session.run(
-        `
-        MERGE (d:Document {url: $url})
-        SET d.title = $title,
-            d.chunkCount = $chunkCount,
-            d.status = 'active',
-            d.updatedAt = datetime()
-        RETURN d
-        `,
-        {
-          url: documentUrl,
-          title: chunks[0]?.metadata.documentTitle || 'Untitled',
-          chunkCount: chunks.length,
-        }
+      await withTimeout(
+        session.run(
+          `
+          MERGE (d:Document {url: $url})
+          SET d.title = $title,
+              d.chunkCount = $chunkCount,
+              d.status = 'active',
+              d.updatedAt = datetime()
+          RETURN d
+          `,
+          {
+            url: documentUrl,
+            title: chunks[0]?.metadata.documentTitle || 'Untitled',
+            chunkCount: chunks.length,
+          }
+        ),
+        this.config.operationTimeout,
+        'Neo4j MERGE Document node'
       );
 
       // Create chunk nodes in batches
@@ -224,26 +290,30 @@ export class Neo4jChunkStorage {
         }));
 
         // Create chunk nodes
-        await session.run(
-          `
-          UNWIND $chunks AS chunk
-          MERGE (c:Chunk {chunk_id: chunk.chunkId})
-          SET c.hash = chunk.contentHash,
-              c.preview = chunk.preview,
-              c.tokenCount = chunk.tokenCount,
-              c.hasCode = chunk.hasCode,
-              c.hasFormula = chunk.hasFormula,
-              c.hasTable = chunk.hasTable,
-              c.chunkIndex = chunk.chunkIndex
-          WITH c, chunk
-          MATCH (d:Document {url: $documentUrl})
-          MERGE (c)-[:FROM_DOCUMENT]->(d)
-          RETURN count(c) as created
-          `,
-          {
-            chunks: chunkData,
-            documentUrl,
-          }
+        await withTimeout(
+          session.run(
+            `
+            UNWIND $chunks AS chunk
+            MERGE (c:Chunk {chunk_id: chunk.chunkId})
+            ON CREATE SET c.hash = chunk.contentHash
+            SET c.preview = chunk.preview,
+                c.tokenCount = chunk.tokenCount,
+                c.hasCode = chunk.hasCode,
+                c.hasFormula = chunk.hasFormula,
+                c.hasTable = chunk.hasTable,
+                c.chunkIndex = chunk.chunkIndex
+            WITH c, chunk
+            MATCH (d:Document {url: $documentUrl})
+            MERGE (c)-[:FROM_DOCUMENT]->(d)
+            RETURN count(c) as created
+            `,
+            {
+              chunks: chunkData,
+              documentUrl,
+            }
+          ),
+          this.config.operationTimeout,
+          `Neo4j create chunk nodes batch (${batch.length} chunks)`
         );
 
         created += batch.length;
@@ -284,14 +354,18 @@ export class Neo4jChunkStorage {
     for (let i = 0; i < pairs.length; i += this.config.neo4jBatchSize) {
       const batch = pairs.slice(i, i + this.config.neo4jBatchSize);
 
-      await session.run(
-        `
-        UNWIND $pairs AS pair
-        MATCH (c1:Chunk {chunk_id: pair.from})
-        MATCH (c2:Chunk {chunk_id: pair.to})
-        MERGE (c1)-[:NEXT_CHUNK]->(c2)
-        `,
-        { pairs: batch }
+      await withTimeout(
+        session.run(
+          `
+          UNWIND $pairs AS pair
+          MATCH (c1:Chunk {chunk_id: pair.from})
+          MATCH (c2:Chunk {chunk_id: pair.to})
+          MERGE (c1)-[:NEXT_CHUNK]->(c2)
+          `,
+          { pairs: batch }
+        ),
+        this.config.operationTimeout,
+        `Neo4j create NEXT_CHUNK relationships batch (${batch.length} pairs)`
       );
     }
   }
@@ -402,7 +476,7 @@ export class Neo4jChunkStorage {
   private hashContent(content: string): string {
     // Simple hash using crypto
     const crypto = require('crypto');
-    return crypto.createHash('sha256').update(content).digest('hex').slice(0, 16);
+    return crypto.createHash('sha256').update(content).digest('hex').slice(0, 32);
   }
 }
 
@@ -444,23 +518,17 @@ export class ChunkStorageManager {
     let milvusInserted = 0;
     let neo4jCreated = 0;
 
-    // Step 1: Insert into Milvus (vector store)
-    try {
-      milvusInserted = await this.milvus.insertChunks(
+    // Insert into Milvus and Neo4j in parallel
+    const [milvusResult, neo4jResult] = await Promise.allSettled([
+      this.milvus.insertChunks(
         chunks,
         (completed, total) => {
           if (onProgress) {
             onProgress({ phase: 'milvus', completed, total });
           }
         }
-      );
-    } catch (error) {
-      errors.push(`Milvus insertion failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    // Step 2: Create nodes in Neo4j (graph store)
-    try {
-      neo4jCreated = await this.neo4j.createChunkNodes(
+      ),
+      this.neo4j.createChunkNodes(
         chunks,
         documentUrl,
         (completed, total) => {
@@ -468,9 +536,19 @@ export class ChunkStorageManager {
             onProgress({ phase: 'neo4j', completed, total });
           }
         }
-      );
-    } catch (error) {
-      errors.push(`Neo4j creation failed: ${error instanceof Error ? error.message : String(error)}`);
+      ),
+    ]);
+
+    if (milvusResult.status === 'fulfilled') {
+      milvusInserted = milvusResult.value;
+    } else {
+      errors.push(`Milvus insertion failed: ${milvusResult.reason instanceof Error ? milvusResult.reason.message : String(milvusResult.reason)}`);
+    }
+
+    if (neo4jResult.status === 'fulfilled') {
+      neo4jCreated = neo4jResult.value;
+    } else {
+      errors.push(`Neo4j creation failed: ${neo4jResult.reason instanceof Error ? neo4jResult.reason.message : String(neo4jResult.reason)}`);
     }
 
     return {

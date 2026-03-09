@@ -1,0 +1,563 @@
+openapi: 3.0.3
+info:
+  title: Knowledge Base ETL Admin API
+  version: 1.0.0
+  description: Admin endpoints for managing knowledge base documents, ingestion, and health monitoring.
+
+paths:
+  /api/admin/upload:
+    post:
+      summary: Upload and ingest a document
+      description: |
+        Upload a file (PDF, Markdown, or plain text) for ingestion into the knowledge base.
+        The file is processed through the ETL pipeline (parse, chunk, embed, extract triples).
+        Returns immediately with a job ID for progress tracking.
+      operationId: uploadDocument
+      tags: [Documents]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Document file (PDF, MD, TXT). Max 10MB.
+                title:
+                  type: string
+                  maxLength: 200
+                  description: Document title. Defaults to filename if omitted.
+                author:
+                  type: string
+                  maxLength: 100
+                  description: Optional author name.
+      responses:
+        '202':
+          description: Upload accepted, processing started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documentId:
+                    type: string
+                    format: uuid
+                  jobId:
+                    type: string
+                    format: uuid
+                  title:
+                    type: string
+                  format:
+                    type: string
+                    enum: [pdf, markdown, text]
+                  fileSize:
+                    type: integer
+                  message:
+                    type: string
+        '400':
+          description: Invalid file (unsupported format, too large, empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Duplicate document detected (same content hash)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: DUPLICATE_DOCUMENT
+                  message:
+                    type: string
+                  existingDocumentId:
+                    type: string
+                    format: uuid
+                  existingTitle:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/admin/upload/force:
+    post:
+      summary: Force upload a duplicate document
+      description: Same as /upload but bypasses duplicate detection. Used when admin confirms re-ingestion.
+      operationId: forceUploadDocument
+      tags: [Documents]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                  maxLength: 200
+                author:
+                  type: string
+                  maxLength: 100
+      responses:
+        '202':
+          description: Upload accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+
+  /api/admin/sources:
+    get:
+      summary: List all knowledge sources
+      description: Returns a paginated list of all documents in the knowledge base with their status and metadata.
+      operationId: listSources
+      tags: [Sources]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          description: Filter by document status
+          schema:
+            type: string
+            enum: [pending, processing, active, failed, archived]
+        - name: format
+          in: query
+          description: Filter by document format
+          schema:
+            type: string
+            enum: [pdf, markdown, text]
+        - name: search
+          in: query
+          description: Search by document title (case-insensitive substring match)
+          schema:
+            type: string
+            maxLength: 200
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [createdAt, title, chunkCount, fileSize]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Paginated list of documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DocumentSummary'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+
+  /api/admin/sources/{documentId}:
+    get:
+      summary: Get source details
+      description: Returns detailed information about a specific document including processing history.
+      operationId: getSourceDetail
+      tags: [Sources]
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDetail'
+        '404':
+          description: Document not found
+
+    delete:
+      summary: Delete a knowledge source
+      description: |
+        Removes the document and all associated data:
+        - Document record from PostgreSQL
+        - Chunks from Milvus vector store
+        - Chunk and concept nodes from Neo4j
+      operationId: deleteSource
+      tags: [Sources]
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Source deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  deletedChunks:
+                    type: integer
+        '404':
+          description: Document not found
+
+  /api/admin/sources/{documentId}/retry:
+    post:
+      summary: Retry failed ingestion
+      description: Re-queue a failed document for processing. Only works for documents with status 'failed'.
+      operationId: retryIngestion
+      tags: [Sources]
+      parameters:
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Retry started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    format: uuid
+                  message:
+                    type: string
+        '400':
+          description: Document is not in failed state
+        '404':
+          description: Document not found
+
+  /api/admin/jobs:
+    get:
+      summary: List ingestion jobs
+      description: Returns recent ingestion jobs with their progress.
+      operationId: listJobs
+      tags: [Jobs]
+      parameters:
+        - name: status
+          in: query
+          description: Filter by job status
+          schema:
+            type: string
+            enum: [queued, chunking, embedding, extracting, complete, failed]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: List of jobs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobSummary'
+                  summary:
+                    type: object
+                    properties:
+                      processing:
+                        type: integer
+                      queued:
+                        type: integer
+                      completed:
+                        type: integer
+                      failed:
+                        type: integer
+
+  /api/admin/jobs/{jobId}/status:
+    get:
+      summary: Get job progress
+      description: Returns current progress of an ingestion job. Alias for existing /api/ingest/:jobId/status.
+      operationId: getJobStatus
+      tags: [Jobs]
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobDetail'
+        '404':
+          description: Job not found
+
+  /api/admin/health:
+    get:
+      summary: Knowledge base health overview
+      description: Returns aggregate statistics about the knowledge base content and health.
+      operationId: getHealthStats
+      tags: [Health]
+      responses:
+        '200':
+          description: Health statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStats'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    UploadResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        jobId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        format:
+          type: string
+        fileSize:
+          type: integer
+        message:
+          type: string
+
+    DocumentSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        format:
+          type: string
+        fileSize:
+          type: integer
+        chunkCount:
+          type: integer
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        ingestedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    DocumentDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        format:
+          type: string
+        author:
+          type: string
+          nullable: true
+        fileSize:
+          type: integer
+          nullable: true
+        fileHash:
+          type: string
+          nullable: true
+        chunkCount:
+          type: integer
+        status:
+          type: string
+        errorMessage:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        ingestedAt:
+          type: string
+          format: date-time
+          nullable: true
+        jobs:
+          type: array
+          description: Processing history
+          items:
+            $ref: '#/components/schemas/JobSummary'
+
+    JobSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        documentTitle:
+          type: string
+        status:
+          type: string
+        currentStep:
+          type: string
+          nullable: true
+        progress:
+          type: integer
+        totalChunks:
+          type: integer
+          nullable: true
+        processedChunks:
+          type: integer
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    JobDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        status:
+          type: string
+        currentStep:
+          type: string
+          nullable: true
+        progress:
+          type: integer
+        totalChunks:
+          type: integer
+          nullable: true
+        processedChunks:
+          type: integer
+        errorMessage:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    HealthStats:
+      type: object
+      properties:
+        totalDocuments:
+          type: integer
+        totalChunks:
+          type: integer
+        totalConcepts:
+          type: integer
+        avgChunksPerDocument:
+          type: number
+        documentsByFormat:
+          type: object
+          properties:
+            pdf:
+              type: integer
+            markdown:
+              type: integer
+            text:
+              type: integer
+        documentsByStatus:
+          type: object
+          properties:
+            active:
+              type: integer
+            processing:
+              type: integer
+            failed:
+              type: integer
+            pending:
+              type: integer
+        topConcepts:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              chunkCount:
+                type: integer

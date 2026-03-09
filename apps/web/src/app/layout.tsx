@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import 'katex/dist/katex.min.css';
 import { ThemeProvider } from './components/ThemeProvider';
+import { QueryProvider } from './components/QueryProvider';
 import { Toaster } from '@/components/ui/sonner';
 
 const geistSans = Geist({
@@ -30,7 +31,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-          {children}
+          <QueryProvider>
+            {children}
+          </QueryProvider>
           <Toaster richColors closeButton position="top-right" />
         </ThemeProvider>
       </body>

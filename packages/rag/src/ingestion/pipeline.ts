@@ -124,6 +124,10 @@ export interface IngestionPipelineConfig {
   maxDocumentSize: number;
   /** Maximum number of chunks per document (T085) */
   maxChunksPerDocument: number;
+  /** Timeout for individual embedding API calls in ms (default: 120000) */
+  embeddingTimeout?: number;
+  /** Timeout for storage operations (Milvus/Neo4j) in ms (default: 300000) */
+  storageTimeout?: number;
 }
 
 const DEFAULT_CONFIG: IngestionPipelineConfig = {
@@ -280,11 +284,17 @@ export class IngestionPipeline {
     this.config = { ...DEFAULT_CONFIG, ...config };
 
     this.chunker = createChunker(this.config.chunker);
-    this.embedder = createBatchEmbedder(undefined, this.config.embedder);
+    this.embedder = createBatchEmbedder(undefined, {
+      ...this.config.embedder,
+      ...(this.config.embeddingTimeout ? { embeddingTimeout: this.config.embeddingTimeout } : {}),
+    });
     this.storage = createChunkStorageManager(
       milvusClient,
       neo4jDriver,
-      this.config.storage
+      {
+        ...this.config.storage,
+        ...(this.config.storageTimeout ? { operationTimeout: this.config.storageTimeout } : {}),
+      }
     );
     this.extractor = createTripleExtractor(undefined, this.config.extractor);
     this.tripleStorage = createTripleStorage(neo4jDriver);
@@ -430,6 +440,18 @@ export class IngestionPipeline {
         console.warn(`${embedResult.failed.length} chunks failed to embed`);
       }
 
+      // Validate embedding results before proceeding to storage
+      if (embedResult.embeddings.length === 0 && chunks.length > 0) {
+        const failReasons = embedResult.failed
+          .slice(0, 3)
+          .map(f => f.error)
+          .join('; ');
+        throw new Error(
+          `Embedding failed: all ${chunks.length} chunks failed to embed. ` +
+          `Reasons: ${failReasons || 'unknown'}`
+        );
+      }
+
       // Stage 4: Store in databases
       await this.updateJobStatus(jobId, 'extracting', 'Storing chunks...', 60);
       onProgress?.({ stage: 'storing', message: 'Storing in databases...', percentage: 60 });
@@ -447,9 +469,32 @@ export class IngestionPipeline {
         }
       );
 
+      // Validate storage succeeded
+      const embeddedCount = embedResult.embeddings.length;
       if (storageResult.errors.length > 0) {
-        console.warn('Storage errors:', storageResult.errors);
+        throw new Error(`Storage failed: ${storageResult.errors.join('; ')}`);
       }
+      if (embeddedCount > 0 && storageResult.milvusInserted === 0) {
+        throw new Error(`Milvus storage failed: 0 of ${embeddedCount} chunks inserted`);
+      }
+      if (embeddedCount > 0 && storageResult.neo4jCreated === 0) {
+        throw new Error(`Neo4j storage failed: 0 of ${embeddedCount} chunk nodes created`);
+      }
+      // Validate cross-store consistency — both stores must have the same count
+      if (storageResult.milvusInserted !== storageResult.neo4jCreated) {
+        throw new Error(
+          `Cross-store consistency violation: Milvus inserted ${storageResult.milvusInserted} ` +
+          `but Neo4j created ${storageResult.neo4jCreated} chunk nodes`
+        );
+      }
+      // Warn if storage count doesn't match embedded count (possible silent data loss)
+      if (embeddedCount !== storageResult.milvusInserted) {
+        console.warn(
+          `Storage count mismatch: sent ${embeddedCount} embeddings but Milvus inserted ${storageResult.milvusInserted}`
+        );
+      }
+      // Use actual stored count instead of parsed count
+      chunkCount = storageResult.milvusInserted;
 
       // Stage 5: Extract triples (optional)
       if (this.config.extractTriples) {
@@ -630,9 +675,36 @@ export class IngestionPipeline {
     onProgress?.({ stage: 'embedding', message: 'Generating embeddings...', percentage: 30 });
     const embedResult = await this.embedder.embedChunks(chunks);
 
+    // Validate embedding results before proceeding to storage
+    if (embedResult.embeddings.length === 0 && chunks.length > 0) {
+      const failReasons = embedResult.failed
+        .slice(0, 3)
+        .map(f => f.error)
+        .join('; ');
+      throw new Error(
+        `Embedding failed: all ${chunks.length} chunks failed to embed. ` +
+        `Reasons: ${failReasons || 'unknown'}`
+      );
+    }
+
     // Store
     onProgress?.({ stage: 'storing', message: 'Storing chunks...', percentage: 60 });
-    await this.storage.storeChunks(embedResult.embeddings, metadata.documentUrl);
+    const storageResult = await this.storage.storeChunks(embedResult.embeddings, metadata.documentUrl);
+    if (storageResult.errors.length > 0) {
+      throw new Error(`Storage failed: ${storageResult.errors.join('; ')}`);
+    }
+    if (embedResult.embeddings.length > 0 && storageResult.milvusInserted === 0) {
+      throw new Error(`Milvus storage failed: 0 of ${embedResult.embeddings.length} chunks inserted`);
+    }
+    if (embedResult.embeddings.length > 0 && storageResult.neo4jCreated === 0) {
+      throw new Error(`Neo4j storage failed: 0 of ${embedResult.embeddings.length} chunk nodes created`);
+    }
+    if (storageResult.milvusInserted !== storageResult.neo4jCreated) {
+      throw new Error(
+        `Cross-store consistency violation: Milvus inserted ${storageResult.milvusInserted} ` +
+        `but Neo4j created ${storageResult.neo4jCreated} chunk nodes`
+      );
+    }
 
     // Extract triples
     if (this.config.extractTriples) {
