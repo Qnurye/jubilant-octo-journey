@@ -153,6 +153,8 @@ This project uses speckit for feature development. Available commands:
 - PostgreSQL (conversations + query metrics), localStorage (client-side message content), Milvus (vectors), Neo4j (graph) (006-chat-conversation-ui)
 - TypeScript 5.x (Bun runtime) + Next.js 16 (frontend), Hono (backend), shadcn/ui (components), Drizzle ORM, TanStack Query (data fetching), `@jubilant/rag` (ETL pipeline) (007-knowledge-etl)
 - PostgreSQL (documents, jobs), Milvus (vectors), Neo4j (graph) (007-knowledge-etl)
+- TypeScript 5.x (Bun runtime) + Next.js 16 (frontend), Hono (backend), Recharts (charts), shadcn/ui (components), TanStack Query (data fetching), Drizzle ORM (PostgreSQL), Neo4j driver (008-teacher-dashboard)
+- PostgreSQL (rag_queries, retrieval_metrics, feedback_events), Neo4j (Concept nodes, DISCUSSES relationships) (008-teacher-dashboard)
 
 ## Recent Changes
 - 006-chat-conversation-ui: Added TypeScript 5.x (Bun runtime) + Next.js 16, Hono, shadcn/ui, Drizzle ORM, Qwen3 LLM (OpenAI-compatible API)

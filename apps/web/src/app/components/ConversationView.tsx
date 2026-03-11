@@ -9,7 +9,6 @@ import { FeedbackWidget } from './FeedbackWidget';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle, Circle, Info, AlertCircle } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface ConversationViewProps {
   messages: ConversationMessage[];
@@ -85,17 +84,19 @@ export function ConversationView({
         <ChatBubble role="assistant" content="">
           <div className="space-y-2">
             {streamingContent ? (
-              <div className="prose dark:prose-invert max-w-none">
-                <MarkdownRenderer content={streamingContent} />
-              </div>
+              <>
+                <div className="prose dark:prose-invert max-w-none">
+                  <MarkdownRenderer content={streamingContent} />
+                </div>
+                <span className="inline-block w-2 h-5 bg-primary animate-pulse ml-0.5 align-text-bottom" />
+              </>
             ) : (
-              <div className="space-y-3">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-5/6" />
+              <div className="flex items-center gap-1 py-1">
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:0ms]" />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:150ms]" />
+                <span className="h-2 w-2 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:300ms]" />
               </div>
             )}
-            <span className="inline-block w-2 h-5 bg-primary animate-pulse ml-0.5 align-text-bottom" />
           </div>
         </ChatBubble>
       )}

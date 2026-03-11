@@ -100,6 +100,7 @@ export interface DocumentRecord {
   status: DocumentStatus;
   chunkCount: number;
   errorMessage: string | null;
+  ingestedAt?: Date | null;
 }
 
 // ============================================================================
@@ -797,6 +798,7 @@ export class IngestionPipeline {
       status,
       chunkCount,
       errorMessage: errorMessage ?? null,
+      ...(status === 'active' ? { ingestedAt: new Date() } : {}),
     });
   }
 
