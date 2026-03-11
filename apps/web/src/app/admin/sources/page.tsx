@@ -39,9 +39,9 @@ export default function SourcesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Knowledge Sources</h1>
+        <h1 className="text-2xl font-bold tracking-tight">知识资源</h1>
         <p className="text-muted-foreground">
-          Browse and manage all documents in the knowledge base.
+          浏览和管理知识库中的所有文档。
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export default function SourcesPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Search by title..."
+            placeholder="按标题搜索..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -68,12 +68,12 @@ export default function SourcesPage() {
           }}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         >
-          <option value="">All statuses</option>
-          <option value="active">Active</option>
-          <option value="processing">Processing</option>
-          <option value="pending">Pending</option>
-          <option value="failed">Failed</option>
-          <option value="archived">Archived</option>
+          <option value="">所有状态</option>
+          <option value="active">已激活</option>
+          <option value="processing">处理中</option>
+          <option value="pending">待处理</option>
+          <option value="failed">失败</option>
+          <option value="archived">已归档</option>
         </select>
 
         <select
@@ -84,10 +84,10 @@ export default function SourcesPage() {
           }}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         >
-          <option value="">All formats</option>
+          <option value="">所有格式</option>
           <option value="pdf">PDF</option>
           <option value="markdown">Markdown</option>
-          <option value="text">Text</option>
+          <option value="text">文本</option>
         </select>
       </div>
 
@@ -105,12 +105,12 @@ export default function SourcesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left p-3 font-medium">Title</th>
-                  <th className="text-left p-3 font-medium">Format</th>
-                  <th className="text-left p-3 font-medium">Chunks</th>
-                  <th className="text-left p-3 font-medium">Status</th>
-                  <th className="text-left p-3 font-medium">Size</th>
-                  <th className="text-left p-3 font-medium">Ingested</th>
+                  <th className="text-left p-3 font-medium">标题</th>
+                  <th className="text-left p-3 font-medium">格式</th>
+                  <th className="text-left p-3 font-medium">分块</th>
+                  <th className="text-left p-3 font-medium">状态</th>
+                  <th className="text-left p-3 font-medium">大小</th>
+                  <th className="text-left p-3 font-medium">入库时间</th>
                 </tr>
               </thead>
               <tbody>
@@ -160,7 +160,7 @@ export default function SourcesPage() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <Badge variant="outline">{getFormatIcon(doc.format)}</Badge>
-                      <span>{doc.chunkCount} chunks</span>
+                      <span>{doc.chunkCount} 个分块</span>
                       <span>{formatFileSize(doc.fileSize)}</span>
                       <span>{doc.ingestedAt ? formatRelativeTime(doc.ingestedAt) : '--'}</span>
                     </div>
@@ -174,8 +174,8 @@ export default function SourcesPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, data.total)} of{' '}
-                {data.total}
+                显示 {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, data.total)}，共{' '}
+                {data.total} 条
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -187,7 +187,7 @@ export default function SourcesPage() {
                   <ChevronLeft className="size-4" />
                 </Button>
                 <span className="text-sm">
-                  Page {page} of {totalPages}
+                  第 {page} / {totalPages} 页
                 </span>
                 <Button
                   variant="outline"
@@ -207,8 +207,8 @@ export default function SourcesPage() {
             <Database className="size-10 mx-auto mb-3 text-muted-foreground" />
             <p className="text-muted-foreground">
               {search || statusFilter || formatFilter
-                ? 'No sources match your filters.'
-                : 'No sources yet. Upload documents from the Dashboard.'}
+                ? '没有匹配筛选条件的资源。'
+                : '暂无资源。请从仪表盘上传文档。'}
             </p>
           </CardContent>
         </Card>

@@ -18,9 +18,9 @@ export default function HealthPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Knowledge Base Health</h1>
+        <h1 className="text-2xl font-bold tracking-tight">知识库健康状况</h1>
         <p className="text-muted-foreground">
-          Overview of content, coverage, and key metrics.
+          内容、覆盖率和关键指标概览。
         </p>
       </div>
 
@@ -28,25 +28,25 @@ export default function HealthPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={FileText}
-          label="Total Documents"
+          label="文档总数"
           value={data?.totalDocuments}
           isLoading={isLoading}
         />
         <StatCard
           icon={Layers}
-          label="Total Chunks"
+          label="分块总数"
           value={data?.totalChunks}
           isLoading={isLoading}
         />
         <StatCard
           icon={Brain}
-          label="Total Concepts"
+          label="概念总数"
           value={data?.totalConcepts}
           isLoading={isLoading}
         />
         <StatCard
           icon={BarChart3}
-          label="Avg Chunks/Doc"
+          label="平均分块/文档"
           value={data?.avgChunksPerDocument !== undefined ? data.avgChunksPerDocument.toFixed(1) : undefined}
           isLoading={isLoading}
         />
@@ -58,7 +58,7 @@ export default function HealthPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <FileText className="size-4" />
-              Documents by Format
+              按格式分类
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -72,10 +72,10 @@ export default function HealthPage() {
               <div className="space-y-3">
                 <FormatBar label="PDF" count={data.documentsByFormat.pdf} total={data.totalDocuments} />
                 <FormatBar label="Markdown" count={data.documentsByFormat.markdown} total={data.totalDocuments} />
-                <FormatBar label="Text" count={data.documentsByFormat.text} total={data.totalDocuments} />
+                <FormatBar label="文本" count={data.documentsByFormat.text} total={data.totalDocuments} />
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No data available.</p>
+              <p className="text-sm text-muted-foreground">暂无数据。</p>
             )}
           </CardContent>
         </Card>
@@ -85,7 +85,7 @@ export default function HealthPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Activity className="size-4" />
-              Documents by Status
+              按状态分类
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -97,13 +97,13 @@ export default function HealthPage() {
               </div>
             ) : data?.documentsByStatus ? (
               <div className="space-y-3">
-                <StatusRow label="Active" count={data.documentsByStatus.active} color="bg-green-500" />
-                <StatusRow label="Processing" count={data.documentsByStatus.processing} color="bg-blue-500" />
-                <StatusRow label="Pending" count={data.documentsByStatus.pending} color="bg-yellow-500" />
-                <StatusRow label="Failed" count={data.documentsByStatus.failed} color="bg-red-500" />
+                <StatusRow label="已激活" count={data.documentsByStatus.active} color="bg-green-500" />
+                <StatusRow label="处理中" count={data.documentsByStatus.processing} color="bg-blue-500" />
+                <StatusRow label="待处理" count={data.documentsByStatus.pending} color="bg-yellow-500" />
+                <StatusRow label="失败" count={data.documentsByStatus.failed} color="bg-red-500" />
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No data available.</p>
+              <p className="text-sm text-muted-foreground">暂无数据。</p>
             )}
           </CardContent>
         </Card>
@@ -114,7 +114,7 @@ export default function HealthPage() {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Brain className="size-4" />
-            Top Concepts
+            热门概念
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -137,13 +137,13 @@ export default function HealthPage() {
                     </span>
                     <span className="text-sm font-medium">{concept.name}</span>
                   </div>
-                  <Badge variant="secondary">{concept.chunkCount} chunks</Badge>
+                  <Badge variant="secondary">{concept.chunkCount} 个分块</Badge>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No concepts extracted yet. Upload and process documents to see concept data.
+              暂无已提取的概念。上传并处理文档以查看概念数据。
             </p>
           )}
         </CardContent>

@@ -9,10 +9,10 @@ import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 const navItems = [
-  { href: '/teacher', label: 'Overview', icon: BarChart3 },
-  { href: '/teacher/hotspots', label: 'Hotspots', icon: Target },
-  { href: '/teacher/coverage', label: 'Coverage', icon: Grid3X3 },
-  { href: '/teacher/trends', label: 'Trends', icon: TrendingUp },
+  { href: '/teacher', label: '概览', icon: BarChart3 },
+  { href: '/teacher/hotspots', label: '热点', icon: Target },
+  { href: '/teacher/coverage', label: '覆盖率', icon: Grid3X3 },
+  { href: '/teacher/trends', label: '趋势', icon: TrendingUp },
 ];
 
 export default function TeacherLayout({
@@ -31,14 +31,14 @@ export default function TeacherLayout({
           <Button variant="ghost" size="sm" asChild className="-ml-2">
             <Link href="/">
               <ArrowLeft className="size-4 mr-1" />
-              <span className="hidden sm:inline">Q&A</span>
+              <span className="hidden sm:inline">问答</span>
             </Link>
           </Button>
 
           <Separator orientation="vertical" className="h-6" />
 
           {/* Teacher branding */}
-          <div className="font-semibold text-sm">Teacher</div>
+          <div className="font-semibold text-sm">教师</div>
 
           {/* Nav links */}
           <nav className="flex items-center gap-1 ml-2">

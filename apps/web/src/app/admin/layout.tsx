@@ -9,11 +9,11 @@ import { Separator } from '@/components/ui/separator';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: Upload },
-  { href: '/admin/sources', label: 'Sources', icon: Database },
-  { href: '/admin/chunks', label: 'Chunks', icon: Layers },
-  { href: '/admin/graph', label: 'Graph', icon: Share2 },
-  { href: '/admin/health', label: 'Health', icon: Activity },
+  { href: '/admin', label: '仪表盘', icon: Upload },
+  { href: '/admin/sources', label: '资源', icon: Database },
+  { href: '/admin/chunks', label: '分块', icon: Layers },
+  { href: '/admin/graph', label: '图谱', icon: Share2 },
+  { href: '/admin/health', label: '健康', icon: Activity },
 ];
 
 export default function AdminLayout({
@@ -32,14 +32,14 @@ export default function AdminLayout({
           <Button variant="ghost" size="sm" asChild className="-ml-2">
             <Link href="/">
               <ArrowLeft className="size-4 mr-1" />
-              <span className="hidden sm:inline">Q&A</span>
+              <span className="hidden sm:inline">问答</span>
             </Link>
           </Button>
 
           <Separator orientation="vertical" className="h-6" />
 
           {/* Admin branding */}
-          <div className="font-semibold text-sm">Admin</div>
+          <div className="font-semibold text-sm">管理</div>
 
           {/* Nav links */}
           <nav className="flex items-center gap-1 ml-2">

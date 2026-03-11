@@ -34,7 +34,7 @@ function JobProgress({ jobId }: { jobId: string }) {
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="size-3 animate-spin" />
-          Starting...
+          启动中...
         </div>
         <ProgressBar value={0} />
       </div>
@@ -78,7 +78,7 @@ export function UploadProgress({ items }: { items: UploadItem[] }) {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium">Upload Progress</h3>
+      <h3 className="text-sm font-medium">上传进度</h3>
       {items.map((item, index) => (
         <Card key={`${item.file.name}-${index}`}>
           <CardContent className="p-4">
@@ -108,7 +108,7 @@ export function UploadProgress({ items }: { items: UploadItem[] }) {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Loader2 className="size-3 animate-spin" />
-                      Uploading...
+                      上传中...
                     </div>
                     <ProgressBar value={10} />
                   </div>
@@ -121,24 +121,24 @@ export function UploadProgress({ items }: { items: UploadItem[] }) {
                 {item.status === 'complete' && (
                   <div className="flex items-center gap-1.5 text-xs text-green-600">
                     <CheckCircle2 className="size-3" />
-                    Ingestion complete
+                    处理完成
                   </div>
                 )}
 
                 {item.status === 'failed' && (
                   <div className="flex items-center gap-1.5 text-xs text-red-600">
                     <XCircle className="size-3" />
-                    {item.error || 'Upload failed'}
+                    {item.error || '上传失败'}
                   </div>
                 )}
 
                 {item.status === 'duplicate' && (
                   <div className="flex items-center gap-1.5 text-xs text-yellow-600">
                     <XCircle className="size-3" />
-                    Duplicate detected
+                    检测到重复
                     {item.duplicateInfo && (
                       <span className="text-muted-foreground">
-                        (existing: {item.duplicateInfo.existingTitle})
+                        （已有：{item.duplicateInfo.existingTitle}）
                       </span>
                     )}
                   </div>

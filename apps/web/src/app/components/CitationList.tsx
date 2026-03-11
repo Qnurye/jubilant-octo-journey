@@ -46,7 +46,7 @@ export function CitationList({ citations, maxVisible = 5 }: CitationListProps) {
       <Collapsible open={expanded} onOpenChange={setExpanded}>
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-muted-foreground">
-            Sources ({citations.length})
+            来源 ({citations.length})
           </h3>
           {hasMore && (
             <CollapsibleTrigger asChild>
@@ -54,12 +54,12 @@ export function CitationList({ citations, maxVisible = 5 }: CitationListProps) {
                 {expanded ? (
                   <>
                     <ChevronUp className="size-3" />
-                    Show less
+                    收起
                   </>
                 ) : (
                   <>
                     <ChevronDown className="size-3" />
-                    Show all {citations.length}
+                    显示全部 {citations.length}
                   </>
                 )}
               </Button>
@@ -144,7 +144,7 @@ function CitationCard({ citation, isSelected, onClick }: CitationCardProps) {
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Chunk ID: {citation.chunkId}</p>
+                <p>分块 ID：{citation.chunkId}</p>
               </TooltipContent>
             </Tooltip>
             <span className="font-medium text-sm truncate">
@@ -158,7 +158,7 @@ function CitationCard({ citation, isSelected, onClick }: CitationCardProps) {
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Relevance score</p>
+              <p>相关度评分</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -212,7 +212,7 @@ function CitationDetail({ citation, onClose }: CitationDetailProps) {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Close details</p>
+              <p>关闭详情</p>
             </TooltipContent>
           </Tooltip>
         </div>
@@ -220,7 +220,7 @@ function CitationDetail({ citation, onClose }: CitationDetailProps) {
       <CardContent className="space-y-3">
         <div>
           <h5 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-            Excerpt
+            摘录
           </h5>
           <blockquote className="pl-3 border-l-2 border-primary text-sm text-muted-foreground italic">
             {citation.snippet}
@@ -229,13 +229,13 @@ function CitationDetail({ citation, onClose }: CitationDetailProps) {
 
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span>
-            Relevance:{' '}
+            相关度：{' '}
             <strong className="text-foreground">
               {Math.round(citation.relevanceScore * 100)}%
             </strong>
           </span>
           <span>
-            Chunk ID:{' '}
+            分块 ID：{' '}
             <code className="bg-muted px-1.5 py-0.5 rounded text-[10px]">
               {citation.chunkId}
             </code>

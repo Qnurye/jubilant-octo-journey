@@ -57,9 +57,9 @@ export function ConversationView({
               {message.metadata && (
                 <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <ConfidenceBadge confidence={message.metadata.confidence} />
-                  <span>Latency: {message.metadata.latencyMs}ms</span>
-                  <span>Vector: {message.metadata.vectorResultCount}</span>
-                  <span>Graph: {message.metadata.graphResultCount}</span>
+                  <span>延迟：{message.metadata.latencyMs}ms</span>
+                  <span>向量：{message.metadata.vectorResultCount}</span>
+                  <span>图谱：{message.metadata.graphResultCount}</span>
                 </div>
               )}
 
@@ -111,10 +111,10 @@ export function ConversationView({
 
 function ConfidenceBadge({ confidence }: { confidence: string }) {
   const config = {
-    high: { label: 'High', variant: 'default' as const, icon: CheckCircle },
-    medium: { label: 'Medium', variant: 'secondary' as const, icon: Circle },
-    low: { label: 'Low', variant: 'outline' as const, icon: Info },
-    insufficient: { label: 'Limited', variant: 'destructive' as const, icon: AlertCircle },
+    high: { label: '高', variant: 'default' as const, icon: CheckCircle },
+    medium: { label: '中', variant: 'secondary' as const, icon: Circle },
+    low: { label: '低', variant: 'outline' as const, icon: Info },
+    insufficient: { label: '不足', variant: 'destructive' as const, icon: AlertCircle },
   };
 
   const { label, variant, icon: Icon } = config[confidence as keyof typeof config] || config.medium;

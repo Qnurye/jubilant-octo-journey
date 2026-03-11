@@ -142,26 +142,26 @@ export default function ChunksPage() {
       <div>
         {fromGraph && concept && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
-            <span>Graph</span>
+            <span>图谱</span>
             <ChevronRightIcon className="size-3.5" />
             <span>
-              Chunks for &lsquo;{concept}&rsquo;
+              &lsquo;{concept}&rsquo; 的分块
             </span>
           </div>
         )}
-        <h1 className="text-2xl font-bold tracking-tight">Chunks</h1>
+        <h1 className="text-2xl font-bold tracking-tight">分块</h1>
         <p className="text-muted-foreground">
-          Browse and inspect all processed content chunks.
+          浏览和检查所有已处理的内容分块。
         </p>
       </div>
 
       {/* Active filter badges */}
       {hasActiveFilters && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">Active filters:</span>
+          <span className="text-xs text-muted-foreground">当前筛选：</span>
           {concept && (
             <Badge variant="secondary" className="gap-1 pr-1">
-              Concept: {concept}
+              概念：{concept}
               <button
                 onClick={clearConcept}
                 className="ml-0.5 rounded-sm hover:bg-muted p-0.5"
@@ -172,7 +172,7 @@ export default function ChunksPage() {
           )}
           {documentId && (
             <Badge variant="secondary" className="gap-1 pr-1">
-              Document: {activeDocTitle || documentId.slice(0, 8)}
+              文档：{activeDocTitle || documentId.slice(0, 8)}
               <button
                 onClick={clearDocumentId}
                 className="ml-0.5 rounded-sm hover:bg-muted p-0.5"
@@ -183,7 +183,7 @@ export default function ChunksPage() {
           )}
           {search && (
             <Badge variant="secondary" className="gap-1 pr-1">
-              Search: {search.length > 20 ? search.slice(0, 20) + '...' : search}
+              搜索：{search.length > 20 ? search.slice(0, 20) + '...' : search}
               <button
                 onClick={() => {
                   setSearch('');
@@ -229,7 +229,7 @@ export default function ChunksPage() {
             </Badge>
           )}
           <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-6 text-xs">
-            Clear all
+            清除全部
           </Button>
         </div>
       )}
@@ -239,7 +239,7 @@ export default function ChunksPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Search chunk content..."
+            placeholder="搜索分块内容..."
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -258,7 +258,7 @@ export default function ChunksPage() {
           }}
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         >
-          <option value="">All documents</option>
+          <option value="">所有文档</option>
           {sourcesData?.documents?.map((doc) => (
             <option key={doc.id} value={doc.id}>
               {doc.title}
@@ -267,7 +267,7 @@ export default function ChunksPage() {
         </select>
 
         <Input
-          placeholder="Filter by concept..."
+          placeholder="按概念筛选..."
           value={concept}
           onChange={(e) => {
             setConcept(e.target.value);
@@ -287,7 +287,7 @@ export default function ChunksPage() {
           className="gap-1.5"
         >
           <Code className="size-3.5" />
-          Code
+          代码
         </Button>
         <Button
           variant={contentFilters.hasFormula ? 'default' : 'outline'}
@@ -296,7 +296,7 @@ export default function ChunksPage() {
           className="gap-1.5"
         >
           <FunctionSquare className="size-3.5" />
-          Formula
+          公式
         </Button>
         <Button
           variant={contentFilters.hasTable ? 'default' : 'outline'}
@@ -305,7 +305,7 @@ export default function ChunksPage() {
           className="gap-1.5"
         >
           <Table className="size-3.5" />
-          Table
+          表格
         </Button>
       </div>
 
@@ -323,12 +323,12 @@ export default function ChunksPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left p-3 font-medium">Content</th>
-                  <th className="text-left p-3 font-medium">Document</th>
-                  <th className="text-left p-3 font-medium">Tokens</th>
-                  <th className="text-left p-3 font-medium">Type</th>
-                  <th className="text-left p-3 font-medium">Topic</th>
-                  <th className="text-left p-3 font-medium">Concepts</th>
+                  <th className="text-left p-3 font-medium">内容</th>
+                  <th className="text-left p-3 font-medium">文档</th>
+                  <th className="text-left p-3 font-medium">Token</th>
+                  <th className="text-left p-3 font-medium">类型</th>
+                  <th className="text-left p-3 font-medium">主题</th>
+                  <th className="text-left p-3 font-medium">概念</th>
                 </tr>
               </thead>
               <tbody>
@@ -366,19 +366,19 @@ export default function ChunksPage() {
                         {chunk.metadata.hasCode && (
                           <Badge variant="outline" className="text-xs">
                             <Code className="size-3 mr-0.5" />
-                            Code
+                            代码
                           </Badge>
                         )}
                         {chunk.metadata.hasFormula && (
                           <Badge variant="outline" className="text-xs">
                             <FunctionSquare className="size-3 mr-0.5" />
-                            Math
+                            公式
                           </Badge>
                         )}
                         {chunk.metadata.hasTable && (
                           <Badge variant="outline" className="text-xs">
                             <Table className="size-3 mr-0.5" />
-                            Table
+                            表格
                           </Badge>
                         )}
                       </div>
@@ -431,18 +431,18 @@ export default function ChunksPage() {
                       {chunk.metadata.documentTitle}
                     </span>
                     <Badge variant="secondary" className="text-xs shrink-0">
-                      {chunk.metadata.tokenCount} tokens
+                      {chunk.metadata.tokenCount} token
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-1">
                     {chunk.metadata.hasCode && (
-                      <Badge variant="outline" className="text-xs">Code</Badge>
+                      <Badge variant="outline" className="text-xs">代码</Badge>
                     )}
                     {chunk.metadata.hasFormula && (
-                      <Badge variant="outline" className="text-xs">Math</Badge>
+                      <Badge variant="outline" className="text-xs">公式</Badge>
                     )}
                     {chunk.metadata.hasTable && (
-                      <Badge variant="outline" className="text-xs">Table</Badge>
+                      <Badge variant="outline" className="text-xs">表格</Badge>
                     )}
                     {chunk.topicTag && (
                       <Badge variant="secondary" className="text-xs">
@@ -468,8 +468,8 @@ export default function ChunksPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing {(page - 1) * pageSize + 1}-
-                {Math.min(page * pageSize, total)} of {total}
+                显示 {(page - 1) * pageSize + 1}-
+                {Math.min(page * pageSize, total)}，共 {total} 条
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -481,7 +481,7 @@ export default function ChunksPage() {
                   <ChevronLeft className="size-4" />
                 </Button>
                 <span className="text-sm">
-                  Page {page} of {totalPages}
+                  第 {page} / {totalPages} 页
                 </span>
                 <Button
                   variant="outline"
@@ -501,8 +501,8 @@ export default function ChunksPage() {
             <Layers className="size-10 mx-auto mb-3 text-muted-foreground" />
             <p className="text-muted-foreground">
               {hasActiveFilters
-                ? 'No chunks match your filters.'
-                : 'No chunks yet. Upload and process documents to see chunks.'}
+                ? '没有匹配筛选条件的分块。'
+                : '暂无分块。上传并处理文档以查看分块。'}
             </p>
           </CardContent>
         </Card>
@@ -518,8 +518,7 @@ export default function ChunksPage() {
             <>
               <DialogHeader>
                 <DialogTitle className="text-base">
-                  Chunk {selectedChunkData.metadata.chunkIndex + 1} of{' '}
-                  {selectedChunkData.metadata.totalChunks}
+                  分块 {selectedChunkData.metadata.chunkIndex + 1} / {selectedChunkData.metadata.totalChunks}
                 </DialogTitle>
                 <p className="text-sm text-muted-foreground">
                   {selectedChunkData.metadata.documentTitle}
@@ -532,7 +531,7 @@ export default function ChunksPage() {
                 {/* Metadata badges */}
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">
-                    {selectedChunkData.metadata.tokenCount} tokens
+                    {selectedChunkData.metadata.tokenCount} token
                   </Badge>
                   {selectedChunkData.topicTag && (
                     <Badge variant="secondary">
@@ -542,19 +541,19 @@ export default function ChunksPage() {
                   {selectedChunkData.metadata.hasCode && (
                     <Badge variant="outline">
                       <Code className="size-3 mr-1" />
-                      Code
+                      代码
                     </Badge>
                   )}
                   {selectedChunkData.metadata.hasFormula && (
                     <Badge variant="outline">
                       <FunctionSquare className="size-3 mr-1" />
-                      Formula
+                      公式
                     </Badge>
                   )}
                   {selectedChunkData.metadata.hasTable && (
                     <Badge variant="outline">
                       <Table className="size-3 mr-1" />
-                      Table
+                      表格
                     </Badge>
                   )}
                 </div>
@@ -563,7 +562,7 @@ export default function ChunksPage() {
                 {selectedChunkData.concepts.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                      Concepts
+                      概念
                     </p>
                     <div className="flex flex-wrap gap-1">
                       {selectedChunkData.concepts.map((c) => (
@@ -582,7 +581,7 @@ export default function ChunksPage() {
                 {/* Full content */}
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                    Full Content
+                    完整内容
                   </p>
                   <div className="rounded-md border bg-muted/30 p-4">
                     <pre className="text-sm whitespace-pre-wrap break-words font-mono">

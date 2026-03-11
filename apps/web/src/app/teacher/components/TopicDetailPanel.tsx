@@ -30,9 +30,9 @@ export function TopicDetailPanel({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="overflow-y-auto sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>{conceptName || 'Topic Detail'}</SheetTitle>
+          <SheetTitle>{conceptName || '主题详情'}</SheetTitle>
           <SheetDescription>
-            Detailed analytics for this concept.
+            该概念的详细分析。
           </SheetDescription>
         </SheetHeader>
 
@@ -51,7 +51,7 @@ export function TopicDetailPanel({
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <AlertTriangle className="size-8 text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">
-                {error.message || 'Failed to load topic details.'}
+                {error.message || '加载主题详情失败。'}
               </p>
             </div>
           ) : data ? (
@@ -59,17 +59,17 @@ export function TopicDetailPanel({
               {/* Stats Row */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Queries</p>
+                  <p className="text-xs text-muted-foreground">查询</p>
                   <p className="text-lg font-bold">{data.queryCount}</p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Confidence</p>
+                  <p className="text-xs text-muted-foreground">置信度</p>
                   <p className="text-lg font-bold">
                     {(data.avgConfidence * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div className="rounded-lg border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Chunks</p>
+                  <p className="text-xs text-muted-foreground">分块</p>
                   <p className="text-lg font-bold">{data.chunkCount}</p>
                 </div>
               </div>
@@ -78,7 +78,7 @@ export function TopicDetailPanel({
               {data.relatedConcepts.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold mb-2">
-                    Related Concepts
+                    关联概念
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {data.relatedConcepts.map((rc) => (
@@ -100,7 +100,7 @@ export function TopicDetailPanel({
               {data.trendOverTime.length >= 2 && (
                 <div>
                   <h4 className="text-sm font-semibold mb-2">
-                    Trend Over Time
+                    趋势变化
                   </h4>
                   <TrendChart data={data.trendOverTime} />
                 </div>
@@ -112,10 +112,10 @@ export function TopicDetailPanel({
                   <Star className="size-4 text-yellow-500" />
                   <div>
                     <p className="text-sm font-medium">
-                      Feedback Rating: {data.feedbackAvgRating.toFixed(1)} / 5
+                      反馈评分：{data.feedbackAvgRating.toFixed(1)} / 5
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Average student rating for this topic
+                      学生对该主题的平均评分
                     </p>
                   </div>
                 </div>

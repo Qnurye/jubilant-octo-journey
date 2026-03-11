@@ -122,7 +122,7 @@ function NodeTooltip({
           {/* Details */}
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Chunks</span>
+              <span>分块</span>
               <span className="font-medium text-foreground">
                 {node.chunkCount}
               </span>
@@ -131,7 +131,7 @@ function NodeTooltip({
             {node.type === 'concept' && relationshipTypes.length > 0 && (
               <div className="space-y-1">
                 <span className="text-xs text-muted-foreground">
-                  Relationships
+                  关系
                 </span>
                 <div className="flex flex-wrap gap-1">
                   {relationshipTypes.map((rel) => (
@@ -149,7 +149,7 @@ function NodeTooltip({
 
             {node.type === 'document' && (
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Connected concepts</span>
+                <span>关联概念</span>
                 <span className="font-medium text-foreground">
                   {connectedConceptCount}
                 </span>
@@ -160,7 +160,7 @@ function NodeTooltip({
           {/* Click hint */}
           <div className="flex items-center gap-1 pt-1 border-t text-[10px] text-muted-foreground">
             <MousePointerClick className="size-3" />
-            <span>Click to view chunks</span>
+            <span>点击查看分块</span>
           </div>
         </CardContent>
       </Card>
@@ -620,9 +620,9 @@ export default function GraphPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Knowledge Graph</h1>
+        <h1 className="text-2xl font-bold tracking-tight">知识图谱</h1>
         <p className="text-muted-foreground">
-          Visual exploration of concept relationships and document connections.
+          概念关系和文档连接的可视化探索。
         </p>
       </div>
 
@@ -632,7 +632,7 @@ export default function GraphPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Brain className="size-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Concepts</span>
+              <span className="text-xs text-muted-foreground">概念</span>
             </div>
             {isLoading ? (
               <Skeleton className="h-8 w-16" />
@@ -648,7 +648,7 @@ export default function GraphPage() {
             <div className="flex items-center gap-2 mb-2">
               <GitBranch className="size-4 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">
-                Relationships
+                关系
               </span>
             </div>
             {isLoading ? (
@@ -664,7 +664,7 @@ export default function GraphPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="size-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">Documents</span>
+              <span className="text-xs text-muted-foreground">文档</span>
             </div>
             {isLoading ? (
               <Skeleton className="h-8 w-16" />
@@ -681,7 +681,7 @@ export default function GraphPage() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex items-center gap-3 flex-1">
           <label className="text-sm text-muted-foreground whitespace-nowrap">
-            Node limit
+            节点上限
           </label>
           <input
             type="range"
@@ -696,7 +696,7 @@ export default function GraphPage() {
         </div>
         <div className="flex items-center gap-3 flex-1">
           <label className="text-sm text-muted-foreground whitespace-nowrap">
-            Min connections
+            最少连接数
           </label>
           <input
             type="range"
@@ -723,8 +723,7 @@ export default function GraphPage() {
           <CardContent className="p-12 text-center">
             <Share2 className="size-10 mx-auto mb-3 text-muted-foreground" />
             <p className="text-muted-foreground">
-              No graph data available. Process documents to build the knowledge
-              graph.
+              暂无图谱数据。处理文档以构建知识图谱。
             </p>
           </CardContent>
         </Card>
@@ -735,17 +734,17 @@ export default function GraphPage() {
         <Card>
           <CardContent className="p-4">
             <p className="text-xs font-medium text-muted-foreground mb-3">
-              Legend
+              图例
             </p>
             <div className="flex flex-wrap gap-x-6 gap-y-2">
               {/* Node types */}
               <div className="flex items-center gap-2">
                 <div className="size-3 rounded-full bg-blue-500" />
-                <span className="text-xs">Concept</span>
+                <span className="text-xs">概念</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="size-3 rounded-sm bg-green-500" />
-                <span className="text-xs">Document</span>
+                <span className="text-xs">文档</span>
               </div>
 
               {/* Divider */}

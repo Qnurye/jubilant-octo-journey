@@ -25,8 +25,8 @@ export default function TeacherOverviewPage() {
   if (error) {
     return (
       <EmptyState
-        title="Failed to load dashboard"
-        description={error.message || 'An unexpected error occurred.'}
+        title="加载仪表盘失败"
+        description={error.message || '发生了意外错误。'}
         icon={<AlertTriangle className="size-12" />}
       />
     );
@@ -37,9 +37,9 @@ export default function TeacherOverviewPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Overview</h1>
+          <h1 className="text-2xl font-bold tracking-tight">概览</h1>
           <p className="text-muted-foreground text-sm">
-            Aggregate query analytics and student engagement insights.
+            查询分析汇总和学生参与度洞察。
           </p>
         </div>
         <TimeRangeFilter value={timeRange} onChange={setTimeRange} />
@@ -62,54 +62,54 @@ export default function TeacherOverviewPage() {
         </div>
       ) : !data || data.totalQueries === 0 ? (
         <EmptyState
-          title="No data yet"
-          description="Query analytics will appear here once students start asking questions."
+          title="暂无数据"
+          description="当学生开始提问后，查询分析将显示在此处。"
           icon={<BarChart3 className="size-12" />}
         />
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <StatCard
-              title="Total Queries"
+              title="总查询数"
               value={data.totalQueries.toLocaleString()}
-              description="All-time total"
+              description="累计总量"
               icon={<BookOpen className="size-4" />}
             />
             <StatCard
-              title="This Period"
+              title="本期查询"
               value={data.periodQueries.toLocaleString()}
-              description={`Queries in the last ${timeRange.preset || 'selected period'}`}
+              description={`最近 ${timeRange.preset || '所选周期'} 的查询`}
               icon={<TrendingUp className="size-4" />}
             />
             <StatCard
-              title="Avg Confidence"
+              title="平均置信度"
               value={`${(data.avgConfidence * 100).toFixed(1)}%`}
-              description="Mean retrieval confidence"
+              description="平均检索置信度"
               icon={<Activity className="size-4" />}
             />
             <StatCard
-              title="Low Confidence"
+              title="低置信度"
               value={data.lowConfidenceCount}
-              description="Queries below threshold"
+              description="低于阈值的查询"
               icon={<AlertTriangle className="size-4" />}
             />
             <StatCard
-              title="Avg Response Time"
+              title="平均响应时间"
               value={`${(data.avgResponseTimeMs / 1000).toFixed(1)}s`}
-              description="Mean end-to-end latency"
+              description="平均端到端延迟"
               icon={<Clock className="size-4" />}
             />
             <StatCard
-              title="Feedback Rating"
+              title="反馈评分"
               value={
                 data.feedbackSummary.totalRatings > 0
                   ? `${data.feedbackSummary.avgRating.toFixed(1)} / 5`
-                  : 'N/A'
+                  : '暂无'
               }
               description={
                 data.feedbackSummary.totalRatings > 0
-                  ? `Based on ${data.feedbackSummary.totalRatings} ratings`
-                  : 'No ratings yet'
+                  ? `基于 ${data.feedbackSummary.totalRatings} 条评分`
+                  : '暂无评分'
               }
               icon={<Star className="size-4" />}
             />
@@ -119,7 +119,7 @@ export default function TeacherOverviewPage() {
           {data.topTopics.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Top Topics</CardTitle>
+                <CardTitle className="text-base">热门主题</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -130,7 +130,7 @@ export default function TeacherOverviewPage() {
                     >
                       <span className="text-sm font-medium">{topic.name}</span>
                       <Badge variant="secondary">
-                        {topic.count} {topic.count === 1 ? 'chunk' : 'chunks'}
+                        {topic.count} 个分块
                       </Badge>
                     </div>
                   ))}

@@ -347,7 +347,7 @@ export default function Home() {
               <div className="hidden sm:block">
                 <h1 className="text-lg font-semibold leading-tight">CompetitionTutor</h1>
                 <p className="text-xs text-muted-foreground">
-                  AI-powered Q&A for ACM-ICPC and Math Modeling
+                  面向 ACM-ICPC 和数学建模的 AI 智能问答
                 </p>
               </div>
             </div>
@@ -372,7 +372,7 @@ export default function Home() {
                     <QueryInput
                       onSubmit={handleSubmit}
                       isLoading={isStreaming}
-                      placeholder="Ask a follow-up question..."
+                      placeholder="输入追问..."
                       maxLength={2000}
                     />
                   </div>
@@ -385,7 +385,7 @@ export default function Home() {
                   <QueryInput
                     onSubmit={handleSubmit}
                     isLoading={isStreaming}
-                    placeholder="Ask about algorithms, data structures, or competition strategies..."
+                    placeholder="输入关于算法、数据结构或竞赛策略的问题..."
                     maxLength={2000}
                   />
                 </section>
@@ -397,31 +397,30 @@ export default function Home() {
                       <EmptyMedia variant="icon">
                         <HelpCircle className="size-6" />
                       </EmptyMedia>
-                      <EmptyTitle>Ask your first question</EmptyTitle>
+                      <EmptyTitle>提出你的第一个问题</EmptyTitle>
                       <EmptyDescription>
-                        Get answers about algorithms, data structures, dynamic programming, graph
-                        theory, and more. All responses include citations from our knowledge base.
+                        获取关于算法、数据结构、动态规划、图论等方面的解答。所有回答都附有知识库引用来源。
                       </EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>
                       <div className="grid gap-2 sm:grid-cols-2 w-full">
                         <ExampleQuestion
-                          question="How does dynamic programming differ from divide and conquer?"
+                          question="动态规划和分治法有什么区别？"
                           onClick={handleSubmit}
                           disabled={isStreaming}
                         />
                         <ExampleQuestion
-                          question="What is the time complexity of Dijkstra's algorithm?"
+                          question="Dijkstra 算法的时间复杂度是多少？"
                           onClick={handleSubmit}
                           disabled={isStreaming}
                         />
                         <ExampleQuestion
-                          question="Explain the union-find data structure"
+                          question="解释并查集数据结构"
                           onClick={handleSubmit}
                           disabled={isStreaming}
                         />
                         <ExampleQuestion
-                          question="How to optimize DP solutions using space compression?"
+                          question="如何使用空间压缩优化 DP 解法？"
                           onClick={handleSubmit}
                           disabled={isStreaming}
                         />
@@ -437,7 +436,7 @@ export default function Home() {
         {/* Footer */}
         <footer className="border-t py-4 px-4 mt-auto">
           <p className="text-center text-xs text-muted-foreground">
-            Powered by hybrid RAG with Qwen3 LLM. All answers are grounded in retrieved evidence.
+            基于混合 RAG 与 Qwen3 大语言模型。所有回答均基于检索到的证据。
           </p>
         </footer>
       </SidebarInset>

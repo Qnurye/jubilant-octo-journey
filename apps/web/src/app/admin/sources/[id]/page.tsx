@@ -82,12 +82,12 @@ export default function SourceDetailPage() {
         <Button variant="ghost" size="sm" asChild>
           <Link href="/admin/sources">
             <ArrowLeft className="size-4 mr-1" />
-            Back to Sources
+            返回资源列表
           </Link>
         </Button>
         <Card>
           <CardContent className="p-12 text-center text-muted-foreground">
-            Document not found.
+            文档未找到。
           </CardContent>
         </Card>
       </div>
@@ -102,7 +102,7 @@ export default function SourceDetailPage() {
           <Button variant="ghost" size="sm" asChild className="-ml-3 mb-1">
             <Link href="/admin/sources">
               <ArrowLeft className="size-4 mr-1" />
-              Back to Sources
+              返回资源列表
             </Link>
           </Button>
           <h1 className="text-2xl font-bold tracking-tight">{doc.title}</h1>
@@ -127,7 +127,7 @@ export default function SourceDetailPage() {
               ) : (
                 <RotateCcw className="size-4 mr-1" />
               )}
-              Retry
+              重试
             </Button>
           )}
           <Button
@@ -136,7 +136,7 @@ export default function SourceDetailPage() {
             onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="size-4 mr-1" />
-            Delete
+            删除
           </Button>
         </div>
       </div>
@@ -147,7 +147,7 @@ export default function SourceDetailPage() {
           <CardContent className="p-4 flex items-start gap-3">
             <XCircle className="size-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-red-600">Processing Error</p>
+              <p className="text-sm font-medium text-red-600">处理错误</p>
               <p className="text-sm text-muted-foreground mt-1">{doc.errorMessage}</p>
             </div>
           </CardContent>
@@ -156,28 +156,28 @@ export default function SourceDetailPage() {
 
       {/* Metadata grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <MetadataItem icon={FileText} label="Format" value={doc.format} />
-        <MetadataItem icon={Hash} label="Chunks" value={String(doc.chunkCount)} />
+        <MetadataItem icon={FileText} label="格式" value={doc.format} />
+        <MetadataItem icon={Hash} label="分块" value={String(doc.chunkCount)} />
         <MetadataItem
           icon={FileText}
-          label="File Size"
+          label="文件大小"
           value={doc.fileSize ? formatFileSize(doc.fileSize) : '--'}
         />
-        <MetadataItem icon={User} label="Author" value={doc.author || '--'} />
+        <MetadataItem icon={User} label="作者" value={doc.author || '--'} />
         <MetadataItem
           icon={Clock}
-          label="Created"
+          label="创建时间"
           value={formatRelativeTime(doc.createdAt)}
         />
         <MetadataItem
           icon={Clock}
-          label="Ingested"
+          label="入库时间"
           value={doc.ingestedAt ? formatRelativeTime(doc.ingestedAt) : '--'}
         />
         {doc.fileHash && (
           <MetadataItem
             icon={Hash}
-            label="Content Hash"
+            label="内容哈希"
             value={doc.fileHash.slice(0, 16) + '...'}
           />
         )}
@@ -187,7 +187,7 @@ export default function SourceDetailPage() {
       {doc.jobs && doc.jobs.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Processing History</CardTitle>
+            <CardTitle className="text-base">处理历史</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -220,7 +220,7 @@ export default function SourceDetailPage() {
                     </div>
                     {job.startedAt && (
                       <p className="text-xs text-muted-foreground">
-                        Started {formatRelativeTime(job.startedAt)}
+                        开始于 {formatRelativeTime(job.startedAt)}
                       </p>
                     )}
                   </div>
@@ -237,16 +237,15 @@ export default function SourceDetailPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="size-5 text-red-600" />
-              Delete Source
+              删除资源
             </DialogTitle>
             <DialogDescription>
-              This will permanently delete &quot;{doc.title}&quot; and remove all associated chunks
-              from the vector store and knowledge graph. This action cannot be undone.
+              将永久删除 &quot;{doc.title}&quot; 并从向量存储和知识图谱中移除所有相关分块。此操作不可撤销。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Cancel
+              取消
             </Button>
             <Button
               variant="destructive"
@@ -258,7 +257,7 @@ export default function SourceDetailPage() {
               ) : (
                 <Trash2 className="size-4 mr-1" />
               )}
-              Delete Permanently
+              永久删除
             </Button>
           </DialogFooter>
         </DialogContent>

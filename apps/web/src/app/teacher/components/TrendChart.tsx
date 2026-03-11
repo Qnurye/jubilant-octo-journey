@@ -19,7 +19,7 @@ interface TrendChartProps {
 function formatDateLabel(bucket: string): string {
   try {
     const date = new Date(bucket);
-    return date.toLocaleDateString(undefined, {
+    return date.toLocaleDateString('zh-CN', {
       month: 'short',
       day: 'numeric',
     });
@@ -76,9 +76,9 @@ export function TrendChart({ data, comparisonData }: TrendChartProps) {
                     className="text-xs text-muted-foreground"
                   >
                     {entry.dataKey === 'queryCount'
-                      ? 'Queries'
+                      ? '查询量'
                       : entry.dataKey === 'comparisonCount'
-                        ? 'Comparison'
+                        ? '对比'
                         : String(entry.dataKey)}
                     : {entry.value}
                   </p>

@@ -21,8 +21,8 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="outline" size="icon" aria-label="Toggle theme">
-        <span className="sr-only">Loading theme</span>
+      <Button variant="outline" size="icon" aria-label="切换主题">
+        <span className="sr-only">加载主题中</span>
       </Button>
     );
   }
@@ -32,7 +32,7 @@ export function ThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" aria-label={`Current theme: ${theme}`}>
+        <Button variant="outline" size="icon" aria-label={`当前主题：${theme}`}>
           {isDark ? (
             <Moon className="h-5 w-5" />
           ) : (
@@ -43,15 +43,15 @@ export function ThemeToggle() {
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme('light')}>
           <Sun className="mr-2 h-4 w-4" />
-          Light
+          浅色
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme('dark')}>
           <Moon className="mr-2 h-4 w-4" />
-          Dark
+          深色
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme('system')}>
           <Monitor className="mr-2 h-4 w-4" />
-          System
+          跟随系统
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

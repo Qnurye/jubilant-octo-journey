@@ -44,8 +44,8 @@ export default function TrendsPage() {
   if (error) {
     return (
       <EmptyState
-        title="Failed to load trends"
-        description={error.message || 'An unexpected error occurred.'}
+        title="加载趋势失败"
+        description={error.message || '发生了意外错误。'}
         icon={<AlertTriangle className="size-12" />}
       />
     );
@@ -56,9 +56,9 @@ export default function TrendsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Trends</h1>
+          <h1 className="text-2xl font-bold tracking-tight">趋势</h1>
           <p className="text-muted-foreground text-sm">
-            Query volume and confidence over time.
+            查询量和置信度的时间变化趋势。
           </p>
         </div>
         <TimeRangeFilter value={timeRange} onChange={setTimeRange} />
@@ -73,24 +73,24 @@ export default function TrendsPage() {
             size="sm"
             onClick={() => setGranularity('day')}
           >
-            Day
+            按天
           </Button>
           <Button
             variant={granularity === 'week' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => setGranularity('week')}
           >
-            Week
+            按周
           </Button>
         </div>
 
         {/* Topic filter */}
         <Select value={topic} onValueChange={setTopic}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="All topics" />
+            <SelectValue placeholder="所有主题" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="__all__">All topics</SelectItem>
+            <SelectItem value="__all__">所有主题</SelectItem>
             {topicOptions.map((name) => (
               <SelectItem key={name} value={name}>
                 {name}
@@ -105,7 +105,7 @@ export default function TrendsPage() {
           size="sm"
           onClick={() => setCompareMode(!compareMode)}
         >
-          {compareMode ? 'Hide comparison' : 'Compare'}
+          {compareMode ? '隐藏对比' : '对比'}
         </Button>
       </div>
 
@@ -114,17 +114,17 @@ export default function TrendsPage() {
         <Skeleton className="h-[400px] w-full rounded-xl" />
       ) : !data || data.dataPoints.length < 2 ? (
         <EmptyState
-          title="Insufficient data"
-          description="At least two data points are needed to display a trend chart. Try a wider time range or wait for more queries."
+          title="数据不足"
+          description="至少需要两个数据点才能显示趋势图。请尝试更宽的时间范围或等待更多查询。"
           icon={<TrendingUp className="size-12" />}
         />
       ) : (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              Query Volume
+              查询量
               {topic ? ` - ${topic}` : ''}
-              {compareMode ? ' (with comparison)' : ''}
+              {compareMode ? '（含对比）' : ''}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -134,7 +134,7 @@ export default function TrendsPage() {
             />
             <p className="text-xs text-muted-foreground text-center mt-2">
               {data.dateRange.from} to {data.dateRange.to} &middot;{' '}
-              {data.granularity === 'day' ? 'Daily' : 'Weekly'} buckets
+              {data.granularity === 'day' ? '按天' : '按周'}统计
             </p>
           </CardContent>
         </Card>

@@ -21,7 +21,7 @@ interface QueryInputProps {
 export function QueryInput({
   onSubmit,
   isLoading,
-  placeholder = 'Ask a question about algorithms, data structures, or competition strategies...',
+  placeholder = '输入关于算法、数据结构或竞赛策略的问题...',
   maxLength = 2000,
 }: QueryInputProps) {
   const [query, setQuery] = useState('');
@@ -93,30 +93,30 @@ export function QueryInput({
                 {isLoading ? (
                   <>
                     <Spinner className="size-4" />
-                    <span className="ml-1">Thinking...</span>
+                    <span className="ml-1">思考中...</span>
                   </>
                 ) : (
                   <>
                     <Send className="size-4" />
-                    <span className="ml-1">Ask</span>
+                    <span className="ml-1">提问</span>
                   </>
                 )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Press Enter to submit</p>
+              <p>按 Enter 提交</p>
             </TooltipContent>
           </Tooltip>
         </div>
       </div>
 
       <p className="mt-2 text-xs text-muted-foreground">
-        Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd> to submit, <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Shift+Enter</kbd> for new line
+        按 <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd> 提交，<kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Shift+Enter</kbd> 换行
       </p>
 
       {isOverLimit && (
         <p className="mt-1 text-xs text-destructive">
-          Query exceeds maximum length of {maxLength} characters
+          问题超出最大长度 {maxLength} 个字符
         </p>
       )}
     </form>

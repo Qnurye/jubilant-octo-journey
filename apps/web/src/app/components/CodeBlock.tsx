@@ -17,7 +17,7 @@ const LANGUAGES = [
   { value: 'go', label: 'Go' },
   { value: 'sql', label: 'SQL' },
   { value: 'bash', label: 'Bash' },
-  { value: 'text', label: 'Plain Text' },
+  { value: 'text', label: '纯文本' },
 ];
 
 // Map common aliases
@@ -106,12 +106,12 @@ export function CodeBlock({
           {copied ? (
             <>
               <CheckIcon className="w-3.5 h-3.5 text-green-500" />
-              <span className="text-green-500">Copied!</span>
+              <span className="text-green-500">已复制！</span>
             </>
           ) : (
             <>
               <CopyIcon className="w-3.5 h-3.5" />
-              <span>Copy</span>
+              <span>复制</span>
             </>
           )}
         </button>

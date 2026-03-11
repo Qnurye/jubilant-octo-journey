@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import type { TimeRange } from '@/lib/teacher-api';
 
 const presets: Array<{ label: string; value: '7d' | '30d' | '90d' }> = [
-  { label: '7d', value: '7d' },
-  { label: '30d', value: '30d' },
-  { label: '90d', value: '90d' },
+  { label: '7天', value: '7d' },
+  { label: '30天', value: '30d' },
+  { label: '90天', value: '90d' },
 ];
 
 interface TimeRangeFilterProps {

@@ -27,7 +27,7 @@ interface FeedbackWidgetProps {
   compact?: boolean;
 }
 
-const RATING_LABELS = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'] as const;
+const RATING_LABELS = ['很差', '一般', '不错', '很好', '优秀'] as const;
 
 function StarRating({
   value,
@@ -97,7 +97,7 @@ export function FeedbackWidget({
 
   const handleSubmit = useCallback(async () => {
     if (rating === 0) {
-      toast.error('Please select a rating');
+      toast.error('请选择评分');
       return;
     }
 
@@ -120,14 +120,14 @@ export function FeedbackWidget({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit feedback');
+        throw new Error(errorData.message || '提交反馈失败');
       }
 
       setSubmitted(true);
-      toast.success('Thank you for your feedback!');
+      toast.success('感谢你的反馈！');
       onSubmit?.(rating, comment.trim() || undefined);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to submit feedback';
+      const errorMessage = err instanceof Error ? err.message : '提交反馈失败';
       toast.error(errorMessage);
       onError?.(errorMessage);
     } finally {
@@ -141,10 +141,10 @@ export function FeedbackWidget({
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
             <Check className="size-5" />
-            <span className="font-medium">Thank you for your feedback!</span>
+            <span className="font-medium">感谢你的反馈！</span>
           </div>
           <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-            Your input helps us improve the system.
+            你的意见有助于我们改进系统。
           </p>
         </CardContent>
       </Card>
@@ -154,7 +154,7 @@ export function FeedbackWidget({
   if (compact) {
     return (
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-sm text-muted-foreground">Rate this response:</span>
+        <span className="text-sm text-muted-foreground">为此回答评分：</span>
         <StarRating
           value={rating}
           hoveredValue={hoveredRating}
@@ -168,10 +168,10 @@ export function FeedbackWidget({
             {isSubmitting ? (
               <>
                 <Spinner className="size-4" />
-                <span className="ml-1">Sending...</span>
+                <span className="ml-1">发送中...</span>
               </>
             ) : (
-              'Submit'
+              '提交'
             )}
           </Button>
         )}
@@ -182,12 +182,12 @@ export function FeedbackWidget({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Was this response helpful?</CardTitle>
+        <CardTitle className="text-base">这个回答有帮助吗？</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Star rating */}
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Rating:</span>
+          <span className="text-sm text-muted-foreground">评分：</span>
           <StarRating
             value={rating}
             hoveredValue={hoveredRating}
@@ -207,14 +207,14 @@ export function FeedbackWidget({
         {rating > 0 && (
           <div className="space-y-2">
             <label htmlFor="feedback-comment" className="text-sm text-muted-foreground">
-              Additional comments (optional):
+              补充说明（可选）：
             </label>
             <Textarea
               id="feedback-comment"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               disabled={isSubmitting}
-              placeholder="Tell us more about your experience..."
+              placeholder="告诉我们更多关于你的体验..."
               maxLength={2000}
               rows={3}
             />
@@ -233,10 +233,10 @@ export function FeedbackWidget({
           {isSubmitting ? (
             <>
               <Spinner className="size-4" />
-              <span className="ml-2">Submitting...</span>
+              <span className="ml-2">提交中...</span>
             </>
           ) : (
-            'Submit Feedback'
+            '提交反馈'
           )}
         </Button>
       </CardContent>

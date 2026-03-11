@@ -23,8 +23,8 @@ export default function HotspotsPage() {
   if (error) {
     return (
       <EmptyState
-        title="Failed to load hotspots"
-        description={error.message || 'An unexpected error occurred.'}
+        title="加载热点失败"
+        description={error.message || '发生了意外错误。'}
         icon={<AlertTriangle className="size-12" />}
       />
     );
@@ -39,9 +39,9 @@ export default function HotspotsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Hotspots</h1>
+          <h1 className="text-2xl font-bold tracking-tight">热点</h1>
           <p className="text-muted-foreground text-sm">
-            Most-queried topics and their confidence levels.
+            查询最多的主题及其置信度。
           </p>
         </div>
         <TimeRangeFilter value={timeRange} onChange={setTimeRange} />
@@ -58,8 +58,8 @@ export default function HotspotsPage() {
         </div>
       ) : !data || data.belowThreshold || data.topics.length === 0 ? (
         <EmptyState
-          title="Insufficient data"
-          description="Not enough query data to generate hotspot analysis. Check back after more students have used the system."
+          title="数据不足"
+          description="查询数据不足以生成热点分析。请等更多学生使用系统后再查看。"
           icon={<Target className="size-12" />}
         />
       ) : (
@@ -68,7 +68,7 @@ export default function HotspotsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Topic Hotspot Map
+                主题热点图
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -77,8 +77,7 @@ export default function HotspotsPage() {
                 onBubbleClick={handleBubbleClick}
               />
               <p className="text-xs text-muted-foreground text-center mt-2">
-                Bubble size = query count. Color: green = high confidence, red =
-                low confidence. Click a bubble for details.
+                气泡大小 = 查询次数。颜色：绿色 = 高置信度，红色 = 低置信度。点击气泡查看详情。
               </p>
             </CardContent>
           </Card>
@@ -87,7 +86,7 @@ export default function HotspotsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base">
-                Top Concepts ({data.topics.length})
+                热门概念 ({data.topics.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -103,13 +102,13 @@ export default function HotspotsPage() {
                         {topic.conceptName}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {topic.chunkCount} chunks &middot;{' '}
-                        {topic.relatedConcepts.length} related
+                        {topic.chunkCount} 个分块 &middot;{' '}
+                        {topic.relatedConcepts.length} 个关联
                       </p>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
                       <Badge variant="secondary">
-                        {topic.queryCount} queries
+                        {topic.queryCount} 次查询
                       </Badge>
                       <Badge
                         variant={

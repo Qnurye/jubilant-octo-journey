@@ -11,7 +11,7 @@ This roadmap outlines the development milestones for CompetitionTutor, a hybrid 
 | M2: RAG Pipeline Core | **Complete** | P0 | Hybrid retrieval implementation |
 | M3: Student Q&A Interface | **Complete** | P0 | Chat UI with code/formula support |
 | M4: Knowledge Base ETL | **Complete** | P1 | Content ingestion pipeline + admin tools |
-| M5: Teacher Dashboard | Pending | P1 | Analytics and visualization |
+| M5: Teacher Dashboard | **Complete** | P1 | Analytics and visualization |
 | M6: Production Readiness | Pending | P2 | CI/CD, monitoring, deployment |
 
 ---
@@ -196,35 +196,38 @@ This roadmap outlines the development milestones for CompetitionTutor, a hybrid 
 
 ---
 
-## M5: Teacher Dashboard
+## M5: Teacher Dashboard (Complete)
 
 **Goal**: Provide instructors with aggregate insights into student learning gaps.
 
 ### Deliverables
-- [ ] Analytics backend (`apps/api`)
+- [x] Analytics backend (`apps/api`)
   - Aggregate question analysis
   - Topic clustering
   - Trend calculation
-- [ ] Dashboard UI (`apps/web/teacher`)
-  - Protected route with role check
-  - Dashboard layout with widget grid
-- [ ] Misconception hotspots (FR-T-01)
-  - Word cloud visualization
-  - Bubble chart of topic frequency
-  - Filter by time range
-- [ ] Knowledge coverage heatmap (FR-T-02)
-  - Topic distribution visualization
-  - Gap identification highlighting
+- [x] Dashboard UI (`apps/web/teacher`)
+  - Teacher layout with navigation (overview, hotspots, coverage, trends)
+  - Dashboard overview with stat cards (queries, confidence, response time, feedback)
+- [x] Misconception hotspots (FR-T-01)
+  - Bubble chart of topic frequency vs confidence
+  - Topic list with query count and confidence badges
+  - Filter by time range (7d/30d/90d)
+  - Topic detail panel (related concepts, trend chart, feedback rating)
+- [x] Knowledge coverage heatmap (FR-T-02)
+  - Coverage heatmap grid with gap indicators (well-covered/low-coverage/no-data)
+  - Summary stats (total concepts, total chunks, coverage distribution)
   - NO individual student data
-- [ ] Question trends (FR-T-03)
-  - Time-series charts
-  - Topic trend analysis
-  - Comparison across periods
+- [x] Question trends (FR-T-03)
+  - Time-series area charts (Recharts)
+  - Day/week granularity toggle
+  - Topic filtering
+  - Period comparison mode
+- [x] Full Chinese localization (all UI text)
 
 ### Exit Criteria
-- Teachers see aggregate misconception data
-- Visualizations update based on real question data
-- No individual student identification possible
+- ~~Teachers see aggregate misconception data~~ **Done**
+- ~~Visualizations update based on real question data~~ **Done**
+- ~~No individual student identification possible~~ **Done**
 
 ### Constitution Compliance
 - P3 (Dual Interface): Strict separation from student interface
@@ -276,7 +279,7 @@ M1 (Database Infrastructure) ✓                        │
        │                                              │
        ├──────────────┬───────────────┐              │
        v              v               v              │
-M2 (RAG Core) ✓   M4 (ETL) ✓     M5 (Dashboard)      │
+M2 (RAG Core) ✓   M4 (ETL) ✓     M5 (Dashboard) ✓     │
        │              │               │              │
        v              │               │              │
 M3 (Student UI) ✓ <───┘               │              │
@@ -307,7 +310,7 @@ M3 (Student UI) ✓ <───┘               │              │
 | Answer accuracy | >90% grounded | Ready for validation |
 | Response latency | <3s P95 | Streaming implemented |
 | Citation coverage | 100% claims cited | Implemented |
-| Teacher dashboard privacy | 0 individual exposure | Design ready |
+| Teacher dashboard privacy | 0 individual exposure | Implemented — aggregate only |
 | Test coverage | >400 tests | **490+ tests passing** |
 
 ---
@@ -320,5 +323,5 @@ M3 (Student UI) ✓ <───┘               │              │
 4. ~~Implement M2 (RAG Pipeline)~~ **Complete**
 5. ~~Implement M3 (Student Q&A Interface)~~ **Complete**
 6. ~~Implement M4 (Knowledge Base ETL)~~ **Complete**
-7. Create feature spec for M5 (Teacher Dashboard) using `/speckit.specify`
+7. ~~Implement M5 (Teacher Dashboard)~~ **Complete**
 8. Begin M6 (Production Readiness) — CI/CD, containerization, monitoring

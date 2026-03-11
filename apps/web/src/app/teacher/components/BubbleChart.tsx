@@ -56,7 +56,7 @@ export function BubbleChart({ data, onBubbleClick }: BubbleChartProps) {
           axisLine={false}
           tickLine={false}
           label={{
-            value: 'Topics',
+            value: '主题',
             position: 'insideBottom',
             offset: -5,
             className: 'fill-muted-foreground text-xs',
@@ -70,7 +70,7 @@ export function BubbleChart({ data, onBubbleClick }: BubbleChartProps) {
           domain={[0, 100]}
           tick={{ fontSize: 12 }}
           label={{
-            value: 'Confidence %',
+            value: '置信度 %',
             angle: -90,
             position: 'insideLeft',
             className: 'fill-muted-foreground text-xs',
@@ -81,7 +81,7 @@ export function BubbleChart({ data, onBubbleClick }: BubbleChartProps) {
           dataKey="z"
           range={[100, 1000]}
           domain={[0, maxQueryCount]}
-          name="Query Count"
+          name="查询次数"
         />
         <Tooltip
           content={({ active, payload }) => {
@@ -91,10 +91,10 @@ export function BubbleChart({ data, onBubbleClick }: BubbleChartProps) {
               <div className="rounded-lg border bg-background p-3 shadow-md">
                 <p className="font-semibold text-sm">{point.name}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Queries: {point.z}
+                  查询次数：{point.z}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Confidence: {point.y.toFixed(1)}%
+                  置信度：{point.y.toFixed(1)}%
                 </p>
               </div>
             );

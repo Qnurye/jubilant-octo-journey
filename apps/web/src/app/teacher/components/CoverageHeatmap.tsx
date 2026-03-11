@@ -64,23 +64,23 @@ export function CoverageHeatmap({ data, onCellClick }: CoverageHeatmapProps) {
                   gapTextColor(cell.gapIndicator)
                 )}
               >
-                {cell.chunkCount} chunks
+                {cell.chunkCount} 个分块
               </span>
             </button>
           </TooltipTrigger>
           <TooltipContent side="top">
             <div className="space-y-1">
               <p className="font-semibold">{cell.conceptName}</p>
-              <p>Chunks: {cell.chunkCount}</p>
-              <p>Queries: {cell.queryCount}</p>
-              <p>Confidence: {(cell.avgConfidence * 100).toFixed(1)}%</p>
+              <p>分块：{cell.chunkCount}</p>
+              <p>查询：{cell.queryCount}</p>
+              <p>置信度：{(cell.avgConfidence * 100).toFixed(1)}%</p>
               <p>
-                Coverage:{' '}
+                覆盖：{' '}
                 {cell.gapIndicator === 'well-covered'
-                  ? 'Well covered'
+                  ? '覆盖良好'
                   : cell.gapIndicator === 'low-coverage'
-                    ? 'Low coverage'
-                    : 'No data'}
+                    ? '覆盖不足'
+                    : '无数据'}
               </p>
             </div>
           </TooltipContent>

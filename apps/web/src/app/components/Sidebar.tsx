@@ -57,7 +57,7 @@ export function Sidebar({
       <SidebarHeader>
         <Button onClick={onNewChat} className="w-full">
           <Plus className="size-5 mr-2" />
-          New Chat
+          新对话
         </Button>
       </SidebarHeader>
 
@@ -72,9 +72,9 @@ export function Sidebar({
                   <EmptyMedia variant="icon">
                     <MessageCircle className="size-5 opacity-50" />
                   </EmptyMedia>
-                  <EmptyTitle className="text-sm">No conversations yet</EmptyTitle>
+                  <EmptyTitle className="text-sm">暂无对话</EmptyTitle>
                   <EmptyDescription className="text-xs">
-                    Start asking questions!
+                    开始提问吧！
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
@@ -99,7 +99,7 @@ export function Sidebar({
 
       <SidebarFooter>
         <div className="text-xs text-muted-foreground text-center py-2">
-          {conversations.length} conversation{conversations.length !== 1 ? 's' : ''}
+          {conversations.length} 个对话
         </div>
       </SidebarFooter>
     </SidebarRoot>
@@ -165,13 +165,13 @@ function ConversationMenuItem({
                 onDelete();
               }}
               className="absolute right-2 top-3 opacity-0 group-hover/item:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive z-10"
-              aria-label="Delete conversation"
+              aria-label="删除对话"
             >
               <Trash2 className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Delete conversation</p>
+            <p>删除对话</p>
           </TooltipContent>
         </Tooltip>
       )}
@@ -186,10 +186,10 @@ function getTimeAgo(date: Date): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return 'now';
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
-  if (diffDays < 7) return `${diffDays}d`;
+  if (diffMins < 1) return '刚刚';
+  if (diffMins < 60) return `${diffMins}分钟前`;
+  if (diffHours < 24) return `${diffHours}小时前`;
+  if (diffDays < 7) return `${diffDays}天前`;
   return date.toLocaleDateString();
 }
 

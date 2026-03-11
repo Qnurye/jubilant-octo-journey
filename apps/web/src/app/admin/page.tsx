@@ -199,31 +199,31 @@ export default function AdminDashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+        <h1 className="text-2xl font-bold tracking-tight">仪表盘</h1>
         <p className="text-muted-foreground">
-          Upload documents and monitor ingestion progress.
+          上传文档并监控处理进度。
         </p>
       </div>
 
       {/* Summary cards (T024) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <SummaryCard
-          label="Processing"
+          label="处理中"
           value={summary?.processing}
           icon={<Loader2 className="size-4 animate-spin text-blue-600" />}
         />
         <SummaryCard
-          label="Queued"
+          label="排队中"
           value={summary?.queued}
           icon={<Clock className="size-4 text-yellow-600" />}
         />
         <SummaryCard
-          label="Completed"
+          label="已完成"
           value={summary?.completed}
           icon={<CheckCircle2 className="size-4 text-green-600" />}
         />
         <SummaryCard
-          label="Failed"
+          label="失败"
           value={summary?.failed}
           icon={<XCircle className="size-4 text-red-600" />}
         />
@@ -234,10 +234,10 @@ export default function AdminDashboard() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="size-5" />
-            Upload Documents
+            上传文档
           </CardTitle>
           <CardDescription>
-            Drag and drop files or click to browse. Supports PDF, Markdown, and plain text (max 10MB each, up to 10 files).
+            拖放文件或点击浏览。支持 PDF、Markdown 和纯文本（每个最大 10MB，最多 10 个文件）。
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -269,15 +269,15 @@ export default function AdminDashboard() {
 
             <FileUp className="size-10 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm font-medium">
-              {isDragOver ? 'Drop files here' : 'Drop files here or click to browse'}
+              {isDragOver ? '拖放文件到这里' : '拖放文件到这里或点击浏览'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              PDF, Markdown (.md), Plain Text (.txt)
+              PDF、Markdown (.md)、纯文本 (.txt)
             </p>
 
             <div className="flex items-center justify-center gap-2 mt-4">
-              <Badge variant="outline">Max 10MB</Badge>
-              <Badge variant="outline">Up to 10 files</Badge>
+              <Badge variant="outline">最大 10MB</Badge>
+              <Badge variant="outline">最多 10 个文件</Badge>
             </div>
           </div>
         </CardContent>
@@ -288,7 +288,7 @@ export default function AdminDashboard() {
 
       {/* Recent jobs (T024) */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Recent Jobs</h2>
+        <h2 className="text-lg font-semibold">最近的任务</h2>
         {jobsLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -304,7 +304,7 @@ export default function AdminDashboard() {
         ) : (
           <Card>
             <CardContent className="p-8 text-center text-muted-foreground">
-              <p>No ingestion jobs yet. Upload a document to get started.</p>
+              <p>暂无处理任务。上传文档以开始。</p>
             </CardContent>
           </Card>
         )}
@@ -321,21 +321,21 @@ export default function AdminDashboard() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="size-5 text-yellow-600" />
-              Duplicate Document Detected
+              检测到重复文档
             </DialogTitle>
             <DialogDescription>
-              A document with the same content already exists in the knowledge base.
+              知识库中已存在相同内容的文档。
             </DialogDescription>
           </DialogHeader>
 
           {duplicateDialog && (
             <div className="rounded-lg bg-muted p-4 text-sm space-y-1">
               <p>
-                <span className="font-medium">Existing document:</span>{' '}
+                <span className="font-medium">已有文档：</span>{' '}
                 {duplicateDialog.info.existingTitle}
               </p>
               <p>
-                <span className="font-medium">New file:</span>{' '}
+                <span className="font-medium">新文件：</span>{' '}
                 {duplicateDialog.file.name}
               </p>
             </div>
@@ -346,9 +346,9 @@ export default function AdminDashboard() {
               variant="outline"
               onClick={() => setDuplicateDialog(null)}
             >
-              Cancel
+              取消
             </Button>
-            <Button onClick={handleForceUpload}>Upload Anyway</Button>
+            <Button onClick={handleForceUpload}>仍然上传</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

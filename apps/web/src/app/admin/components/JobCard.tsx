@@ -50,7 +50,7 @@ export function JobCard({ job }: { job: JobSummary }) {
         {isActive && <ProgressBar value={job.progress} />}
 
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{job.progress}% complete</span>
+          <span>{job.progress}% 完成</span>
           <span>{getElapsedTime(job.startedAt, job.completedAt)}</span>
         </div>
       </CardContent>
